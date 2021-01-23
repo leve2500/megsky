@@ -6,7 +6,7 @@
 #include "vrp_event.h"
 #include "ssp_mid.h"
 #include "rmt_frame.h"
-#include "sgdev_struct.h"
+
 
 uint32_t g_FaultFlag;
 const int32_t	FRAME_HEAD = 0x68;		// ֡ͷ

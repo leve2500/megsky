@@ -14,6 +14,7 @@
 #ifndef _MQTT_PUB_H_
 #define _MQTT_PUB_H_
 
+#include <stdbool.h>
 #include "MQTTClient.h"
 
 #ifdef __cplusplus

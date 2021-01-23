@@ -1,6 +1,7 @@
 #ifndef	_FRAME_RPC_H_
 #define	_FRAME_RPC_H_
 
+#include "sgdev_struct.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -11,7 +12,6 @@ extern "C" {
 
 
 int16_t sg_packframe(char * msg_send, mqtt_data_info_s* info);
-// int32_t GetRecvBufMax(void);
 
 uint8_t* GetRecvBuf(uint16_t usPos);
 uint16_t GetRecvNum(void);

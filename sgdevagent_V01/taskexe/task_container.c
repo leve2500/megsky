@@ -62,9 +62,9 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
         install_info.port_map.port_node[0].container_port = atoi(right_obj);
     }
     if (cmdobj->dev_len > 0) {
-        install_info.map_dev.dev_num = cmdobj->dev_len;
-        install_info.map_dev.dev_list = (install_dev_node*)VOS_Malloc(MID_SGDEV, sizeof(install_dev_node) * cmdobj->dev_len);            //记得释放
-        if (install_info.map_dev.dev_list != NULL) {
+        install_info.dev_map.dev_num = cmdobj->dev_len;
+        install_info.dev_map.dev_list = (install_dev_node*)VOS_Malloc(MID_SGDEV, sizeof(install_dev_node) * cmdobj->dev_len);            //记得释放
+        if (install_info.dev_map.dev_list != NULL) {
             for (i = 0; i < cmdobj->dev_len; i++)
             {
                 if (sg_str_colon(cmdobj->dev[i], strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
@@ -92,7 +92,7 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
                 }
                 sprintf_s(install_info.mount_dir_add.mount_dir[i].host_dir,
                     VM_PATH_MAX_128, "%s", left_obj);
-                sprintf_s(install_info.mount_dir_add.mount_dir[i].contaienr_dir,
+                sprintf_s(install_info.mount_dir_add.mount_dir[i].container_dir,
                     VM_PATH_MAX_128, "%s", right_obj);
             }
         }
@@ -106,7 +106,7 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
         ret = VOS_ERR;
     }
 
-    VOS_Free(install_info.map_dev.dev_list);
+    VOS_Free(install_info.dev_map.dev_list);
     VOS_Free(install_info.mount_dir_add.mount_dir);
 
     return ret;

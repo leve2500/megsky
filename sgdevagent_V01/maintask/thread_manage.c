@@ -1,6 +1,12 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
 #include "vos_typdef.h"
 #include "vos_errno.h"
 #include "vrp_mem.h"
+#include "vrp_event.h"
 #include "ssp_mid.h"
 #include "vrp_queue.h"
 

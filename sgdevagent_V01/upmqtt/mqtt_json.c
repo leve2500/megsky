@@ -1,7 +1,12 @@
 #include <time.h>
 #include <string.h>
 #include <stdlib.h>
+
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+
 #include "sgdev_param.h"
 #include "sgdev_struct.h"
 #include "mqtt_json.h"
@@ -307,3 +312,48 @@ char *sg_pack_json_msg_header(uint16_t code, int32_t mid, const char *type, cons
     return result;
 }
 
+//解析cfgCpu对象
+int sg_getcfgcpu(json_t *obj, cfg_cpu_info_s *cfgcpuobj)
+{
+    if (json_is_object(obj)) {
+        if (json_into_uint32_t(&cfgcpuobj->cpus, obj, "cpus") != VOS_OK) {
+            return VOS_ERR;
+        }
+        if (json_into_uint32_t(&cfgcpuobj->cpuLmt, obj, "cpuLmt") != VOS_OK) {
+            return VOS_ERR;
+        }
+    } else {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}
+//解析cfgMem对象
+int sg_getcfgmem(json_t *obj, cfg_mem_info_s *cfgmemobj)
+{
+    if (json_is_object(obj)) {
+        if (json_into_uint32_t(&cfgmemobj->memory, obj, "memory") != VOS_OK) {
+            return VOS_ERR;
+        }
+        if (json_into_uint32_t(&cfgmemobj->memLmt, obj, "memLmt") != VOS_OK) {
+            return VOS_ERR;
+        }
+    } else {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}
+//解析cfgDisk对象
+int sg_getcfgdisk(json_t *obj, cfg_disk_info_s *cfgdiskobj)
+{
+    if (json_is_object(obj)) {
+        if (json_into_uint32_t(&cfgdiskobj->disk, obj, "disk") != VOS_OK) {
+            return VOS_ERR;
+        }
+        if (json_into_uint32_t(&cfgdiskobj->diskLmt, obj, "diskLmt") != VOS_OK) {
+            return VOS_ERR;
+        }
+    } else {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}

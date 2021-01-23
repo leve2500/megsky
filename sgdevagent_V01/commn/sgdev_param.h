@@ -12,6 +12,8 @@
 #ifndef _SGDEV_PARAM_H_
 #define _SGDEV_PARAM_H_
 
+#include "sgdev_struct.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif

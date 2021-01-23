@@ -20,11 +20,8 @@
 extern "C" {
 #endif
 
-//================定义华为方结构体======================2020.1.21 编译调试 暂时放到这里
-typedef struct dev_usage_status_reply {
-    cpuusage_s      cpuoutput_value;                      //CPU 负载（例如 50 表示 50%）
-    memoryusage_s   memoutput_value;                      //内存使用情况
-}dev_usage_status_s;
+
+
 
 
  /*========================设备管理================================== */

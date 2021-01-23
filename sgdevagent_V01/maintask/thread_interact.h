@@ -1,7 +1,7 @@
 
 
 /*=====================================================================
- * 文件：thread_business_Interact.h
+ * 文件：thread_interact.h
  *
  * 描述：业务交互线程
  *
@@ -13,6 +13,8 @@
 
 #ifndef _THREAD_BUS_INTER_H_
 #define _THREAD_BUS_INTER_H_
+
+#include "sgdev_struct.h"
 
 #ifdef __cplusplus
 extern "C" {

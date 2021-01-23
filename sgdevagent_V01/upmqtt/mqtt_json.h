@@ -37,9 +37,15 @@ char *sg_pack_json_msg_header(uint16_t code, int32_t mid, const char *type, cons
 
 int sg_getfile(json_t *obj, file_info_s *fileobj);
 
+int sg_getcfgcpu(json_t *obj, cfg_cpu_info_s *cfgcpuobj);
+
+int sg_getcfgmem(json_t *obj, cfg_mem_info_s *cfgmemobj);
+
+int sg_getcfgdisk(json_t *obj, cfg_disk_info_s *cfgdiskobj);
+
 #ifdef __cplusplus
-#endif 
 }
+#endif 
 
 #endif
 

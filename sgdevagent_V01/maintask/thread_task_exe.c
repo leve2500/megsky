@@ -1,11 +1,26 @@
-#include "thread_task_exe.h"
-#include "mqtt_pub.h"
-#include "sgdev_queue.h"
-#include "thread_dev_insert.h"
-#include "json_frame.h"
-#include "task_deal.h"
-#include "sgdev_param.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+#include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+#include "ssp_mid.h"
+
 #include "vrp_queue.h"
+#include "sgdev_struct.h"
+#include "sgdev_param.h"
+#include "sgdev_queue.h"
+#include "mqtt_pub.h"
+#include "mqtt_json.h"
+
+#include "thread_dev_insert.h"
+#include "thread_task_exe.h"
+#include "task_deal.h"
+
+
 //设备升级
 static void sg_deal_dev_install_cmd(int32_t mid, char* param)
 {

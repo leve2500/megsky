@@ -1,12 +1,12 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
 
 #include "vrp.h"
 #include "vrp_task.h"
-
 #include "vos_typdef.h"
 
 #include "sgdev_debug.h"
@@ -18,6 +18,7 @@
 #include "thread_task_exe.h"
 #include "thread_interact.h"
 #include "thread_manage.h"
+
 #include "timer_pack.h"
 #include "rmt_socket.h"
 #include "mqtt_pub.h"
@@ -218,9 +219,7 @@ int main(int argc, char *argv[])
             if (!sg_get_mqtt_connect_flag()) {
                 sg_mqtt_exit();
                 sg_mqtt_init();
-            } else {
-                rc = sg_get_mqttclient_isconnected();
-                if (rc != true && (Mqtt_restart_num > 0)) {
+            } else if (!sg_get_mqttclient_isconnected()){
                     printf("MQTTClient_isConnected false.\n");
                     sg_mqtt_exit();
                     sg_mqtt_init();

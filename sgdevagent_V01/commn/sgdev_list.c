@@ -1,6 +1,6 @@
 
 #include <stdlib.h>
-#include "sgdevlist.h"
+#include "sgdev_list.h"
 
 
 void list_init(list_t *list)

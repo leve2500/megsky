@@ -1,14 +1,20 @@
 #include <sys/times.h>
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "ssp_mid.h"
+#include "net_common.h"
+#include "ifm_status.h"
 
 #include "sysman_devinfo_def.h"
 #include "sysman_rpc_api.h"
+
+#include "sgdev_struct.h"
+#include "sgdev_queue.h"
+#include "sgdev_mutex.h"
 #include "thread_dev_insert.h"
 #include "mqtt_dev.h"
 #include "mqtt_pub.h"
-#include "sgdev_queue.h"
-#include "sgdev_mutex.h"
-#include "sgdev_struct.h"
 #include "task_link.h"
 
 int bdevInsFlag = 0;

@@ -1,4 +1,9 @@
+#include <stdio.h>
+#include <stdbool.h>
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
 #include "mqtt_pub.h"
 #include "sgdev_param.h"
 #include "sgdev_queue.h"

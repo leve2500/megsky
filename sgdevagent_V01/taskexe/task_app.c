@@ -2,8 +2,14 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <stdbool.h>
 
-#include "thread_business_Interact.h"
+#include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+#include "ssp_mid.h"
+
 #include "vm_public.h"
 #include "vos_typdef.h"
 #include "sysman_rpc_api.h"
@@ -11,14 +17,7 @@
 
 #include <glib-object.h>
 #include <thrift/c_glib/thrift.h>
-#include <thrift/c_glib/processor/thrift_multiservice_processor.h>
-#include <thrift/c_glib/protocol/thrift_binary_protocol.h>
-#include <thrift/c_glib/protocol/thrift_router_protocol.h>  
-#include <thrift/c_glib/server/thrift_server.h>
-#include <thrift/c_glib/server/thrift_router_server.h>
-#include <thrift/c_glib/transport/thrift_router_transport.h>
-#include <thrift/c_glib/transport/thrift_kmsg.h>
-#include <thrift_service_def.h>
+
 
 #include "mqtt_json.h"
 #include "mqtt_app.h"
@@ -31,7 +30,7 @@
 #include "task_link.h"
 #include "task_app.h"
 #include "timer_pack.h"
-
+#include "thread_interact.h"
 
 int sg_app_install(app_install_cmd_s cmdobj, char *errmsg)
 {

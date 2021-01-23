@@ -1,4 +1,10 @@
+#include <stdio.h>
+#include <stdbool.h>
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+#include "ssp_mid.h"
 #include "rmt_frame.h"
 #include "sgdev_struct.h"
 

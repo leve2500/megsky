@@ -2,10 +2,54 @@
 #include <string.h>
 #include <stdlib.h>
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
 #include "sgdev_struct.h"
 #include "sgdev_param.h"
 #include "mqtt_json.h"
 #include "mqtt_container.h"
+
+//解析withAPP对象
+static int sg_getwithapp(json_t *obj, with_app_info_s *withappobj)
+{
+    json_t *withApp_file_info = NULL;
+    json_t *withApp_cfgCpu_info = NULL;
+    json_t *withApp_cfgMem_info = NULL;
+    if (json_is_object(obj)) {
+        if (json_into_string(withappobj->version, obj, "version") != VOS_OK) {
+            return VOS_ERR;
+        }
+        if (json_into_string(withappobj->enable, obj, "enable") != VOS_OK) {
+            return VOS_ERR;
+        }
+        withApp_file_info = json_object_get(obj, "file");
+        if (sg_getfile(withApp_file_info, &withappobj->file) != VOS_OK) {
+            return VOS_ERR;
+        }
+        withApp_cfgCpu_info = json_object_get(obj, "cfgCpu");
+        if (withApp_cfgCpu_info != NULL && json_is_object(withApp_cfgCpu_info)) {
+            if (json_into_uint32_t(&withappobj->cfgCpu.cpus, withApp_cfgCpu_info, "cpus") != VOS_OK) {
+                return VOS_ERR;
+            }
+            if (json_into_uint32_t(&withappobj->cfgCpu.cpuLmt, withApp_cfgCpu_info, "cpuLmt") != VOS_OK) {
+                return VOS_ERR;
+            }
+        }
+        withApp_cfgMem_info = json_object_get(obj, "cfgMem");
+        if (withApp_cfgMem_info != NULL && json_is_object(withApp_cfgMem_info)) {
+            if (json_into_uint32_t(&withappobj->cfgMem.memory, withApp_cfgMem_info, "memory") != VOS_OK) {
+                return VOS_ERR;
+            }
+            if (json_into_uint32_t(&withappobj->cfgMem.memLmt, withApp_cfgMem_info, "memLmt") != VOS_OK) {
+                return VOS_ERR;
+            }
+        }
+    } else {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}
 
 //容器安装控制 
 int sg_unpack_container_install_cmd(json_t *obj, container_install_cmd_s *cmdobj)

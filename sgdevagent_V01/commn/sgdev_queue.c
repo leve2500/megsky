@@ -1,8 +1,16 @@
-#include "vrp_queue.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include "vrp.h"
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_queue.h"
+#include "vrp_mem.h"
+
 #include "sgdev_queue.h"
 #include "sgdev_mutex.h"
-#include "sgdev_struct.h"
+
 
 uint32_t create_unpack_queue_id = 0;
 uint32_t create_pack_queue_id = 0;

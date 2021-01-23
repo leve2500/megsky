@@ -1,12 +1,17 @@
 
 #include <stdio.h>
-#include <ctype.h>
+#include <stdlib.h>
+#include <stdbool.h>
 #include <sys/stat.h>
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <curl/curl.h>
 
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "ssp_mid.h"
+
+#include "sgdev_struct.h"
 #include "sgdev_curl.h"
 
 int sg_sign_download(sign_info_s file);

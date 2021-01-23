@@ -1,11 +1,25 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+
+#include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+#include "ssp_mid.h"
+
 #include "vrp_queue.h"
 #include "vrp_task.h"
 #include "vrp_timer.h"
+
+#include "sgdev_struct.h
+#include "sgdev_queue.h
 #include "timer_pack.h"
 #include "mqtt_json.h"
 #include "mqtt_dev.h"
 #include "mqtt_pub.h"
-#include "sgdev_queue.h"
+"
 #include "thread_dev_insert.h"
 #include "task_deal.h"
 //示例

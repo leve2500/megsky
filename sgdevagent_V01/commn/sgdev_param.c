@@ -1,11 +1,14 @@
+#include <stdio.h>
 #include <linux/limits.h>
 #include <limits.h>
 
 #include "vos_typdef.h"
-#include "sgdev_param.h"
-#include "sgdev_struct.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "ssp_mid.h"
 
-#include "json_frame.h"
+#include "sgdev_param.h"
+#include "mqtt_json.h"
 
 sg_dev_param_info_s m_devParam;
 sg_dev_section_info_s m_devSection;
@@ -36,7 +39,6 @@ int getfilesize(char *strFileName)   //获取文件大小字节
     fclose(fp);
     return size;
 }
-
 //读取断面文件
 int read_section_file(void)
 {

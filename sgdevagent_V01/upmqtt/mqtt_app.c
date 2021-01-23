@@ -3,6 +3,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+
 #include "sgdev_struct.h"
 #include "sgdev_param.h"
 #include "mqtt_json.h"

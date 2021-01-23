@@ -3,25 +3,12 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/sysinfo.h>
-#include <sys/time.h>               
+#include <sys/time.h>
+
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "ssp_mid.h"
 #include "sgdev_struct.h"
-
-int edge_reboot_flag = REBOOT_EDGE_RESET;
-
-
-//统计无符号长整数二进制表示中1的个数
-//Hamming_weight算法二---只考虑1的位数
-unsigned long long sg_hamming_weight(unsigned long long number)
-{
-    int count_ = 0; //声明计数变量
-
-    while (number != 0) { //遍历
-        number &= number - 1;
-        count_++;
-    }
-    return count_;
-}
 
 
 static char* ii_strncpy(char *io_pDst, const char *i_pSrc, int i_nLen)
@@ -40,6 +27,18 @@ static char* ii_strncpy(char *io_pDst, const char *i_pSrc, int i_nLen)
     return io_pDst;
 }
 
+//统计无符号长整数二进制表示中1的个数
+//Hamming_weight算法二---只考虑1的位数
+unsigned long long sg_hamming_weight(unsigned long long number)
+{
+    int count_ = 0; //声明计数变量
+
+    while (number != 0) { //遍历
+        number &= number - 1;
+        count_++;
+    }
+    return count_;
+}
 //从Index处开始搜索第num次出现字符串i_pStr的位置
 int sg_find(char *m_pBuf, int m_nLen, const char *i_pStr, int i_nNum, int i_nIndex)
 {

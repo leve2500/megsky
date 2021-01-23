@@ -1,19 +1,24 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include <string.h>
+#include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vos_mem.h"
 #include "vrp_task.h"
 #include "vrp_queue.h"
+#include "ssp_mid.h"
 
-#include "vos_typdef.h"
 
-#include "thread_interact.h"
-#include "thread_dev_insert.h"
+#include "sgdev_queue.h"
 #include "mqtt_pub.h"
 #include "mqtt_dev.h"
 #include "mqtt_app.h"
 #include "mqtt_container.h"
-#include "sgdev_queue.h"
-#include "sgdev_struct.h"
+
 #include "timer_pack.h"
-
-
+#include "thread_dev_insert.h"
+#include "thread_interact.h"
 
 dev_status_reply_s device_upgrade_status = { 0 };
 dev_status_reply_s container_install_status = { 0 };

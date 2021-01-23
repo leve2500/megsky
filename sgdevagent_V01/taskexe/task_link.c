@@ -5,11 +5,18 @@
 #include <sys/sysinfo.h>
 #include <sys/time.h>               //系统的
 
-#include "ssp_syslog.h"             //公用的
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+#include "ssp_mid.h"
+#include "ssp_syslog.h"
+#include "net_common.h"
+#include "ifm_status.h"
 #include "vm_public.h"
 #include "sysman_devinfo_def.h"
 #include "sysman_rpc_api.h"
+
 #include "sgdev_struct.h"
 #include "sgdev_param.h"
 #include "task_link.h"               //自己的

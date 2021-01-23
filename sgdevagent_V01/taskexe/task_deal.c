@@ -6,18 +6,18 @@
 
 #include <glib-object.h>
 #include <thrift/c_glib/thrift.h>
-#include <thrift/c_glib/processor/thrift_multiservice_processor.h>
-#include <thrift/c_glib/protocol/thrift_binary_protocol.h>
-#include <thrift/c_glib/protocol/thrift_router_protocol.h>  
-#include <thrift/c_glib/server/thrift_server.h>
-#include <thrift/c_glib/server/thrift_router_server.h>
-#include <thrift/c_glib/transport/thrift_router_transport.h>
-#include <thrift/c_glib/transport/thrift_kmsg.h>
-#include <thrift_service_def.h>
-#include "vm_public.h"
-#include "app_management_service_api.h"
-#include "sysman_rpc_api.h"
+
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+#include "ssp_mid.h"
+
+#include "vm_public.h"
+#include "sysman_rpc_api.h"
+#include "app_management_service_api.h"
+
+
 #include "task_app.h"
 #include "task_container.h"
 #include "task_deal.h"
@@ -32,7 +32,10 @@
 
 #include "thread_interact.h"
 
-
+typedef struct dev_usage_status_reply {
+    cpuusage_s      cpuoutput_value;                      //CPU 负载（例如 50 表示 50%）
+    memoryusage_s   memoutput_value;                      //内存使用情况
+}dev_usage_status_s;
 
 //设备升级命令  略过 未加返回值
 int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s cmdobj)

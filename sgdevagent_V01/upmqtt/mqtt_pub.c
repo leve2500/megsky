@@ -4,28 +4,28 @@
 #include "sgdev_queue.h"
 #include "sgdev_struct.h"
 
-char   m_ip[DATA32_LEN];
+char   m_ip[DATA_BUF_F32_SIZE];
 uint16_t   m_port;
 char   m_ver[24];
-char   m_devid[DATA32_LEN];
-char   m_clientid[DATA32_LEN];
+char   m_devid[DATA_BUF_F32_SIZE];
+char   m_clientid[DATA_BUF_F32_SIZE];
 char   m_user[24];
 char   m_password[24];
 
 
-char   m_top_data_sub_dev_com[DATA256_LEN];
-char   m_top_data_sub_dev_res[DATA256_LEN];
-char   m_top_data_sub_ctai_com[DATA256_LEN];
-char   m_top_data_sub_app_com[DATA256_LEN];
+char   m_top_data_sub_dev_com[DATA_BUF_F256_SIZE];
+char   m_top_data_sub_dev_res[DATA_BUF_F256_SIZE];
+char   m_top_data_sub_ctai_com[DATA_BUF_F256_SIZE];
+char   m_top_data_sub_app_com[DATA_BUF_F256_SIZE];
 
-char   m_device_reply_pub[DATA256_LEN];
-char   m_device_request_pub[DATA256_LEN];
-// char   m_device_response_pub[DATA256_LEN];
-char   m_device_data_pub[DATA256_LEN];
-char   m_container_reply_pub[DATA256_LEN];
-char   m_container_data_pub[DATA256_LEN];
-char   m_app_reply_pub[DATA256_LEN];
-char   m_app_data_pub[DATA256_LEN];
+char   m_device_reply_pub[DATA_BUF_F256_SIZE];
+char   m_device_request_pub[DATA_BUF_F256_SIZE];
+// char   m_device_response_pub[DATA_BUF_F256_SIZE];
+char   m_device_data_pub[DATA_BUF_F256_SIZE];
+char   m_container_reply_pub[DATA_BUF_F256_SIZE];
+char   m_container_data_pub[DATA_BUF_F256_SIZE];
+char   m_app_reply_pub[DATA_BUF_F256_SIZE];
+char   m_app_data_pub[DATA_BUF_F256_SIZE];
 
 
 int				m_connect_flag;	//mqtt连接标志
@@ -129,11 +129,11 @@ bool sg_mqtt_init(void)
     m_connect_flag = DEVICE_OFFLINE;
     sg_dev_param_info_s param = sg_get_param();
     m_port = param.port;
-    memcpy_s(m_ip, DATA32_LEN, param.ip, strlen(param.ip));
-    memcpy_s(m_clientid, DATA32_LEN, param.clientid, strlen(param.clientid));
+    memcpy_s(m_ip, DATA_BUF_F32_SIZE, param.ip, strlen(param.ip));
+    memcpy_s(m_clientid, DATA_BUF_F32_SIZE, param.clientid, strlen(param.clientid));
     memcpy_s(m_user, 24, param.user, strlen(param.user));
     memcpy_s(m_password, 24, param.password, strlen(param.password));
-    char szTemp[DATA256_LEN] = { 0 };
+    char szTemp[DATA_BUF_F256_SIZE] = { 0 };
     sprintf(szTemp, "tcp://%s:%u", m_ip, m_port);
     printf("url == %s\n", szTemp);
     int rc;
@@ -189,7 +189,7 @@ int sg_mqtt_msg_pub(char*msg_send, char*pubtopic)
     // char msg_send[MSG_ARRVD_MAX_LEN]={0};
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     MQTTClient_deliveryToken token;
-    // char pubtopic[DATA256_LEN] = {0};  
+    // char pubtopic[DATA_BUF_F256_SIZE] = {0};  
     msglen = (int)strlen(msg_send);
     pubmsg.payload = msg_send;
     pubmsg.payloadlen = msglen;

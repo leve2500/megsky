@@ -37,7 +37,7 @@ int sg_dev_insert_thread(void)
             }
             (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-            if (sprintf_s(item->pubtopic, DATA256_LEN, "%s", get_topic_device_request_pub()) < 0) {
+            if (sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_request_pub()) < 0) {
                 printf("megsky--test :sprintf_s pubtopic failed \n");
                 continue;
             }

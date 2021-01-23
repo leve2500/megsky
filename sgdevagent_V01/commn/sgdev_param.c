@@ -41,7 +41,7 @@ int getfilesize(char *strFileName)   //获取文件大小字节
 int read_section_file(void)
 {
     FILE *fp = NULL;
-    char buff[DATA256_LEN] = { 0 };
+    char buff[DATA_BUF_F256_SIZE] = { 0 };
     json_t* piload = NULL;
     fp = fopen("/mnt/internal_storage/sg_devagentsection", "r");
     if (NULL == fp) {
@@ -49,7 +49,7 @@ int read_section_file(void)
         // exit(0);
     } else {
         printf("step 1\n");
-        fgets(buff, DATA256_LEN, (FILE*)fp);	//将文件内容全部读取
+        fgets(buff, DATA_BUF_F256_SIZE, (FILE*)fp);	//将文件内容全部读取
         printf("step 2\n");
         piload = load_json(buff);		//将字符串转为json
         printf("step 3\n");
@@ -208,13 +208,13 @@ void write_param_file(void) //手动写参数文件
         printf("Failed to open the file !\n");
     }
     m_devParam.startmode = MODE_MQTT;
-    sprintf_s(m_devParam.mqtttopicversion, DATA32_LEN, "%s", "v1");
-    sprintf_s(m_devParam.ip, DATA32_LEN, "%s", "192.168.100.1");
+    sprintf_s(m_devParam.mqtttopicversion, DATA_BUF_F32_SIZE, "%s", "v1");
+    sprintf_s(m_devParam.ip, DATA_BUF_F32_SIZE, "%s", "192.168.100.1");
     m_devParam.port = 1883;
-    sprintf_s(m_devParam.devid, DATA32_LEN, "%s", "T231234567890ABCDEFGHIJKLMN");
-    sprintf_s(m_devParam.clientid, DATA32_LEN, "%s", "1602733326565@ClientId");
-    sprintf_s(m_devParam.user, DATA32_LEN, "%s", "1602733320528@UserName");
-    sprintf_s(m_devParam.password, DATA32_LEN, "%s", "abc12321cba");
+    sprintf_s(m_devParam.devid, DATA_BUF_F32_SIZE, "%s", "T231234567890ABCDEFGHIJKLMN");
+    sprintf_s(m_devParam.clientid, DATA_BUF_F32_SIZE, "%s", "1602733326565@ClientId");
+    sprintf_s(m_devParam.user, DATA_BUF_F32_SIZE, "%s", "1602733320528@UserName");
+    sprintf_s(m_devParam.password, DATA_BUF_F32_SIZE, "%s", "abc12321cba");
 
     json_object_set_new(piload, "startmode", json_integer(m_devParam.startmode));
     json_object_set_new(piload, "mqtttopicversion", json_string(m_devParam.mqtttopicversion));
@@ -332,6 +332,5 @@ sg_dev_section_info_s sg_get_section(void)
     m_devSection.rebootReason = 0;
     return m_devSection;
 }
-
 
 

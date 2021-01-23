@@ -52,8 +52,8 @@ int sg_curl_download_file(char* filename, char* filepath)
     CURLcode res;
 
     http_file_s httpfile;
-    //sprintf_s(httpfile.filename, DATA512_LEN, "%s/%s", DEFAULT_FILE_PATH,filename);
-    sprintf_s(httpfile.filename, DATA512_LEN, "%s", filename);
+    //sprintf_s(httpfile.filename, DATA_BUF_F512_SIZE, "%s/%s", DEFAULT_FILE_PATH,filename);
+    sprintf_s(httpfile.filename, DATA_BUF_F512_SIZE, "%s", filename);
     httpfile.stream = NULL;
     curl_global_init(CURL_GLOBAL_DEFAULT);
     curl = curl_easy_init();
@@ -121,11 +121,11 @@ int sg_curl_upload_file(char* file, char* url)
 
 int sg_sign_download(sign_info_s file)
 {
-    char filename[DATA512_LEN];
-    char outmd5[DATA64_LEN + 1];
+    char filename[DATA_BUF_F512_SIZE];
+    char outmd5[DATA_BUF_F64_SIZE + 1];
     int bRet = VOS_OK;
     int filesize = 0;
-    sprintf_s(filename, DATA512_LEN, "%s/%s", DEFAULT_FILE_PATH, file.name);
+    sprintf_s(filename, DATA_BUF_F512_SIZE, "%s/%s", DEFAULT_FILE_PATH, file.name);
 
     if (sg_curl_download_file(filename, file.url) != VOS_OK) {
         return VOS_ERR;
@@ -138,7 +138,7 @@ int sg_sign_download(sign_info_s file)
         }
     }
     if (strlen(file.md5) != 0) {
-        if (ssp_calculate_md5_of_file(filename, outmd5, DATA64_LEN) == VOS_OK) {
+        if (ssp_calculate_md5_of_file(filename, outmd5, DATA_BUF_F64_SIZE) == VOS_OK) {
             sg_tolower(file.md5, strlen(file.md5));
             if (strncmp(outmd5, file.md5, strlen(outmd5)) != 0) {
                 printf("%s", "sign md5 check failed \n");
@@ -152,29 +152,29 @@ int sg_sign_download(sign_info_s file)
 
 int sg_file_download(file_info_s file, char* msg)
 {
-    char filename[DATA512_LEN + 1];
-    char outmd5[DATA64_LEN + 1];
+    char filename[DATA_BUF_F512_SIZE + 1];
+    char outmd5[DATA_BUF_F64_SIZE + 1];
     int bRet = VOS_OK;
     int filesize = 0;
-    sprintf_s(filename, DATA512_LEN, "%s/%s", DEFAULT_FILE_PATH, file.name);
+    sprintf_s(filename, DATA_BUF_F512_SIZE, "%s/%s", DEFAULT_FILE_PATH, file.name);
     if (strlen(file.url) == 0) { //没有url则无需下载
         return VOS_OK;
     }
     if (sg_curl_download_file(filename, file.url) == VOS_ERR) {
-        sprintf_s(msg, DATA64_LEN, "%s", "download file failed");
+        sprintf_s(msg, DATA_BUF_F64_SIZE, "%s", "download file failed");
         return VOS_ERR;
     }
     filesize = getfilesize(filename) / 1024;  //判断文件大小
     if (abs(filesize - file.size) > 10) {
-        sprintf_s(msg, DATA64_LEN, "%s", "file size is not correct");
+        sprintf_s(msg, DATA_BUF_F64_SIZE, "%s", "file size is not correct");
         bRet = VOS_ERR;
     }
     //MD5
-    if (ssp_calculate_md5_of_file(filename, outmd5, DATA64_LEN) == VOS_OK) {
+    if (ssp_calculate_md5_of_file(filename, outmd5, DATA_BUF_F64_SIZE) == VOS_OK) {
         printf("sgdevagent**** : outmd5 = %s.\n", outmd5);
         sg_tolower(file.md5, strlen(file.md5));
         if (strncmp(outmd5, file.md5, strlen(outmd5)) != 0) {
-            sprintf_s(msg, DATA64_LEN, "%s", "md5 check failed");
+            sprintf_s(msg, DATA_BUF_F64_SIZE, "%s", "md5 check failed");
             return VOS_ERR;
         }
     }
@@ -183,13 +183,13 @@ int sg_file_download(file_info_s file, char* msg)
         if (strlen(file.sign.url) == 0) {
             bRet = VOS_OK;
         } else if (sg_sign_download(file.sign) != VOS_OK) {
-            sprintf_s(msg, DATA64_LEN, "%s", "download sign file fialed");
+            sprintf_s(msg, DATA_BUF_F64_SIZE, "%s", "download sign file fialed");
             return VOS_ERR;
         }
     }
     //判断文件类型
     if (strncmp(file.fileType, "ova", strlen(file.fileType)) != 0) {
-        sprintf_s(msg, DATA64_LEN, "%s", "file type is not correct");
+        sprintf_s(msg, DATA_BUF_F64_SIZE, "%s", "file type is not correct");
         return VOS_ERR;
     }
     return bRet;

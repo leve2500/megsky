@@ -16,6 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
+
 #include "sgdev_mutex.h"
 
 pthread_mutex_t m_mutex;

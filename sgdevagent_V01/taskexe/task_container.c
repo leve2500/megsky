@@ -39,12 +39,12 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
     INSTALL_OVA_PARA_NORTH_SG_S install_info = {0};
     dev_status_reply_s status = { 0 };
     status.jobId = cmdobj->jobId;
-    char left_obj[DATA64_LEN] = {0};
-    char right_obj[DATA64_LEN] = { 0 };
+    char left_obj[DATA_BUF_F64_SIZE] = {0};
+    char right_obj[DATA_BUF_F64_SIZE] = { 0 };
     int i = 0;
     int cpus = cmdobj->cfgCpu.cpus;
-    memcpy_s(install_info.container_name, DATA64_LEN, cmdobj->container, strlen(cmdobj->container) + 1);  //ÈÝÆ÷Ãû³Æ¸³Öµ	 
-    memcpy_s(install_info.ova_name, DATA64_LEN, cmdobj->image.name, strlen(cmdobj->image.name) + 1);  //¾µÏñÃû³Æ¸³Öµ
+    memcpy_s(install_info.container_name, DATA_BUF_F64_SIZE, cmdobj->container, strlen(cmdobj->container) + 1);  //ÈÝÆ÷Ãû³Æ¸³Öµ	 
+    memcpy_s(install_info.ova_name, DATA_BUF_F64_SIZE, cmdobj->image.name, strlen(cmdobj->image.name) + 1);  //¾µÏñÃû³Æ¸³Öµ
     install_info.disk_size = cmdobj->cfgDisk.disk;
     install_info.disk_threshold = cmdobj->cfgDisk.diskLmt;
     install_info.mem_size = cmdobj->cfgMem.memory;
@@ -58,7 +58,7 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
         install_info.port_map.add_type = PORT_ADD_OVERWRITE;
         install_info.port_map.num = 1;
         if (sg_str_colon(cmdobj->port, strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
-            sprintf_s(errmsg, DATA128_LEN, "port is not correct");
+            sprintf_s(errmsg, DATA_BUF_F128_SIZE, "port is not correct");
             return VOS_ERR;
         }
         install_info.port_map.port_node[0].host_port = atoi(left_obj);
@@ -71,7 +71,7 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
             for (i = 0; i < cmdobj->dev_len; i++)
             {
                 if (sg_str_colon(cmdobj->dev[i], strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
-                    sprintf_s(errmsg, DATA128_LEN, "dev map is not correct");
+                    sprintf_s(errmsg, DATA_BUF_F128_SIZE, "dev map is not correct");
                     return VOS_ERR;
                 }
                 sprintf_s(install_info.dev_map.dev_list[i].host_dev, 
@@ -90,7 +90,7 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
             for (i = 0; i < cmdobj->mount_len; i++)
             {
                 if (sg_str_colon(cmdobj->mount[i], strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
-                    sprintf_s(errmsg, DATA128_LEN, "dev map is not correct");
+                    sprintf_s(errmsg, DATA_BUF_F128_SIZE, "dev map is not correct");
                     return VOS_ERR;
                 }
                 sprintf_s(install_info.mount_dir_add.mount_dir[i].host_dir,

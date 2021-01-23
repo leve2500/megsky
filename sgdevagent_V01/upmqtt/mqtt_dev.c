@@ -270,7 +270,7 @@ int sg_pack_dev_heartbeat_request_data(char *msg)
     json_t *heartbeatobj = NULL;
 
     heart_request_s heart_request = { 0 };
-    sprintf_s(heart_request.type, DATA32_LEN, "%s", EVENT_HEARTBEAT);  //×Ö·û´®¸³Öµ
+    sprintf_s(heart_request.type, DATA_BUF_F32_SIZE, "%s", EVENT_HEARTBEAT);  //×Ö·û´®¸³Öµ
     // sprintf(heart_request.type,  "%s", EVENT_HEARTBEAT);  //×Ö·û´®¸³Öµ
     heartbeatobj = json_object();
     //»ñÈ¡²ÎÊý
@@ -307,7 +307,7 @@ int sg_pack_dev_heartbeat_response_data(char *msg)
     json_t *heartbeatobj = NULL;
     heart_reply_s heart_reply = { 0 };
     heart_reply.code = REQUEST_SUCCESS;
-    sprintf_s(heart_reply.type, DATA32_LEN, "%s", EVENT_HEARTBEAT);  //×Ö·û´®¸³Öµ
+    sprintf_s(heart_reply.type, DATA_BUF_F32_SIZE, "%s", EVENT_HEARTBEAT);  //×Ö·û´®¸³Öµ
     // sprintf(heart_reply.type,  "%s", EVENT_HEARTBEAT);  //×Ö·û´®¸³Öµ
     heartbeatobj = json_object();
     //»ñÈ¡²ÎÊý

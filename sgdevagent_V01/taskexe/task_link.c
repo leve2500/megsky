@@ -23,7 +23,7 @@ int edge_reboot_flag = REBOOT_EDGE_RESET;
 static int sg_get_devname(char *devName)
 {
     int pos = 0;
-    char Temp_str[DATA64_LEN];
+    char Temp_str[DATA_BUF_F64_SIZE];
     if (sg_file_common_get(HOSTNAME_FILE, Temp_str) == VOS_OK) {
         //处理数据
         pos = sg_find(Temp_str, strlen(Temp_str), "\n", 1, 0);
@@ -73,7 +73,7 @@ static int sg_get_devtype(char *devType)
 static int sg_get_hardware_version(char *Version)
 {
     int pos = 0;
-    char Temp_str[DATA64_LEN];
+    char Temp_str[DATA_BUF_F64_SIZE];
     if (sg_file_common_get(DEVICE_HARDWARE_VERSION, Temp_str) == VOS_OK) {
         pos = sg_find(Temp_str, strlen(Temp_str), "H", 1, 0);
         if (pos > 0) {
@@ -98,7 +98,7 @@ static int sg_get_hardware_version(char *Version)
 int sg_get_dev_devinfo(dev_info_s *info)
 {
     int pos = 0;
-    char Temp_str[DATA64_LEN];
+    char Temp_str[DATA_BUF_F64_SIZE];
     if (info == NULL) {
         printf("\nsg_get_dev_devinfo :info is NULL.\n");
         return VOS_ERR;
@@ -124,7 +124,7 @@ int sg_get_dev_devinfo(dev_info_s *info)
         printf("common_get mfgInfo error!\n");
         return VOS_ERR;
     }
-    sprintf_s(info->devStatus, DATA64_LEN, "%s", "online");                     //获取终端状态 ??
+    sprintf_s(info->devStatus, DATA_BUF_F64_SIZE, "%s", "online");                     //获取终端状态 ??
     ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "syslog_info->devStatus = %s\n", info->devStatus);
 
     if (sg_get_hardware_version(info->hardVersion) == VOS_OK) {                 //获取终端硬件版本号
@@ -150,7 +150,7 @@ int sg_get_cpu_devinfo(cpu_info_s *info)
     int dstbuflen = 0;
     struct sysinfo si;
     cpuusage_s output_value = { 0 };
-    char errmsg[DATA256_LEN] = { 0 };
+    char errmsg[DATA_BUF_F256_SIZE] = { 0 };
     //cpu核数
     info->cpus = sysconf(_SC_NPROCESSORS_ONLN);
     //cpu主频
@@ -173,7 +173,7 @@ int sg_get_cpu_devinfo(cpu_info_s *info)
     info->cache = si.bufferram / (1024 * 1024);
     //cpu告警阈值
     if (sysman_rpc_transport_open() == VOS_OK) {
-        ret = cpuusage_status_call_get_threshold(&output_value, errmsg, DATA256_LEN);
+        ret = cpuusage_status_call_get_threshold(&output_value, errmsg, DATA_BUF_F256_SIZE);
     }
     sysman_rpc_transport_close();
     if (ret == VOS_OK) {
@@ -190,7 +190,7 @@ int sg_get_mem_devinfo(mem_info_s *info)
     int ret = VOS_OK;
     struct sysinfo si;
     memoryusage_s output_value = { 0 };
-    char errmsg[DATA256_LEN] = { 0 };
+    char errmsg[DATA_BUF_F256_SIZE] = { 0 };
     //虚拟内存，以M为单位 
     info->virt = sg_memvirt_total();
     //物理内存，以M为单位
@@ -199,7 +199,7 @@ int sg_get_mem_devinfo(mem_info_s *info)
 
     //内存监控阈值，例如50表示50% 
     if (sysman_rpc_transport_open() == VOS_OK) {
-        ret = memoryusage_status_call_get_threshold(&output_value, errmsg, DATA256_LEN);
+        ret = memoryusage_status_call_get_threshold(&output_value, errmsg, DATA_BUF_F256_SIZE);
     }
     sysman_rpc_transport_close();
 
@@ -210,10 +210,10 @@ int sg_get_disk_devinfo(disk_info_s *info)
 {
     int ret = VOS_OK;
     int pos = 0;
-    char buf[DATA256_LEN] = { 0 };
-    char dstbuf[DATA256_LEN] = { 0 };
+    char buf[DATA_BUF_F256_SIZE] = { 0 };
+    char dstbuf[DATA_BUF_F256_SIZE] = { 0 };
     storageusage_s* output_value = NULL;
-    char errmsg[DATA256_LEN] = { 0 };
+    char errmsg[DATA_BUF_F256_SIZE] = { 0 };
     uint32_t infoNum = 0;
     int freeRet = 0;
 
@@ -233,7 +233,7 @@ int sg_get_disk_devinfo(disk_info_s *info)
     }
     output_value = (storageusage_s*)VOS_Malloc(MID_SGDEV, sizeof(storageusage_s) * STORAGE_PARTITION_MAX_NUM);
     if (sysman_rpc_transport_open() == VOS_OK) {
-        ret = storageusage_status_call_get_threshold(&infoNum, output_value, errmsg, DATA256_LEN);
+        ret = storageusage_status_call_get_threshold(&infoNum, output_value, errmsg, DATA_BUF_F256_SIZE);
     }
     sysman_rpc_transport_close();
     if (output_value != NULL) {
@@ -247,13 +247,13 @@ int sg_get_disk_devinfo(disk_info_s *info)
 }
 int sg_get_os_devinfo(os_info_s *info)    //2020.12.15 检查：需要完善
 {
-    // char            distro[DATA64_LEN];        //操作系统的名称，如"Ubuntu""Redhat"
-    // char            version[DATA64_LEN];       //操作系统版本，如"18.10"
-    // char            kernel[DATA64_LEN];        //操作系统内核，如"3.10-17"
-    // char            softVersion[DATA64_LEN];   //平台软件组件版本，如"V01.024"
-    // char            patchVersion[DATA64_LEN];  //平台软件组件补丁版本，如"PV01.0001"
+    // char            distro[DATA_BUF_F64_SIZE];        //操作系统的名称，如"Ubuntu""Redhat"
+    // char            version[DATA_BUF_F64_SIZE];       //操作系统版本，如"18.10"
+    // char            kernel[DATA_BUF_F64_SIZE];        //操作系统内核，如"3.10-17"
+    // char            softVersion[DATA_BUF_F64_SIZE];   //平台软件组件版本，如"V01.024"
+    // char            patchVersion[DATA_BUF_F64_SIZE];  //平台软件组件补丁版本，如"PV01.0001"
 
-    char buf[DATA256_LEN] = { 0 };
+    char buf[DATA_BUF_F256_SIZE] = { 0 };
 
     if (sg_cmd_common_get("uname -s", info->distro) != VOS_OK) {
         printf("megsky test uname -s fail \n ");
@@ -265,16 +265,16 @@ int sg_get_os_devinfo(os_info_s *info)    //2020.12.15 检查：需要完善
         printf("megsky test uname -r fail \n ");
     }
     if (sg_file_common_get(CUSTOM_SOFTWARE_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->softVersion, DATA256_LEN, "%s", buf);
+        sprintf_s(info->softVersion, DATA_BUF_F256_SIZE, "%s", buf);
     } else if (sg_file_common_get(SOFTWARE_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->softVersion, DATA256_LEN, "%s", buf);
+        sprintf_s(info->softVersion, DATA_BUF_F256_SIZE, "%s", buf);
     } else {
         return VOS_ERR;
     }
     if (sg_file_common_get(CUSTOM_PATCH_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->patchVersion, DATA256_LEN, "%s", buf);
+        sprintf_s(info->patchVersion, DATA_BUF_F256_SIZE, "%s", buf);
     } else if (sg_file_common_get(PATCH_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->patchVersion, DATA256_LEN, "%s", buf);
+        sprintf_s(info->patchVersion, DATA_BUF_F256_SIZE, "%s", buf);
     } else {
         return VOS_ERR;
     }
@@ -346,24 +346,24 @@ int sgcc_get_links_info(link_info_s **links_info_out, int *links_num)
             continue;
         }
         //type
-        if (sprintf_s(links[num].type, DATA32_LEN, "%s", ifm_link_info->type) < 0) {
+        if (sprintf_s(links[num].type, DATA_BUF_F32_SIZE, "%s", ifm_link_info->type) < 0) {
             goto error_end;
         }
         //id
-        if (sprintf_s(links[num].id, DATA32_LEN, "%d", ifm_link_info->if_index) < 0) {
+        if (sprintf_s(links[num].id, DATA_BUF_F32_SIZE, "%d", ifm_link_info->if_index) < 0) {
             goto error_end;
         }
         //name
         if (strncmp(ifm_link_info->vlan_master, "NO", strlen(ifm_link_info->vlan_master)) != 0) {
-            ret_spr = sprintf_s(links[num].name, DATA32_LEN, "%s@%s", ifm_link_info->name, ifm_link_info->vlan_master);
+            ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s@%s", ifm_link_info->name, ifm_link_info->vlan_master);
         } else {
-            ret_spr = sprintf_s(links[num].name, DATA32_LEN, "%s", ifm_link_info->name);
+            ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s", ifm_link_info->name);
         }
         if (ret_spr < 0) {
             goto error_end;
         }
         //mac
-        if (sprintf_s(links[num].mac, DATA32_LEN, "%s", ifm_link_info->mac_addr) < 0) {
+        if (sprintf_s(links[num].mac, DATA_BUF_F32_SIZE, "%s", ifm_link_info->mac_addr) < 0) {
             goto error_end;
         }
         printf("\n****links_in[%d].type = %s\n", num, links[num].type);
@@ -439,9 +439,9 @@ int sgcc_get_links_info2(link_dev_info_s **links_info_out, int *links_num)
         }
         //name
         if (strncmp(ifm_link_info->vlan_master, "NO", strlen(ifm_link_info->vlan_master)) != 0) {
-            ret_spr = sprintf_s(links[num].name, DATA32_LEN, "%s@%s", ifm_link_info->name, ifm_link_info->vlan_master);
+            ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s@%s", ifm_link_info->name, ifm_link_info->vlan_master);
         } else {
-            ret_spr = sprintf_s(links[num].name, DATA32_LEN, "%s", ifm_link_info->name);
+            ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s", ifm_link_info->name);
         }
         if (ret_spr < 0) {
             goto error_end;
@@ -451,9 +451,9 @@ int sgcc_get_links_info2(link_dev_info_s **links_info_out, int *links_num)
             strncmp(ifm_link_info->name, "rf", strlen("rf")) == 0) &&
             strncmp(ifm_link_info->oper_status, "unknown", strlen(ifm_link_info->oper_status)) == 0) {
 
-            ret_spr = sprintf_s(links[num].status, DATA64_LEN, "%s", "up");
+            ret_spr = sprintf_s(links[num].status, DATA_BUF_F64_SIZE, "%s", "up");
         } else {
-            ret_spr = sprintf_s(links[num].status, DATA64_LEN, "%s", ifm_link_info->oper_status);
+            ret_spr = sprintf_s(links[num].status, DATA_BUF_F64_SIZE, "%s", ifm_link_info->oper_status);
         }
         if (ret_spr < 0) {
             goto error_end;
@@ -500,13 +500,13 @@ int sg_get_dev_insert_info(dev_acc_req_s *devinfo)  //获取设备接入信息
 int sg_down_update_host(device_upgrade_s cmdobj, char *errormsg)
 {
     int ret = VOS_OK;
-    char errmsg[DATA256_LEN];
-    char filepath[DATA256_LEN];
-    char signature[DATA256_LEN];
+    char errmsg[DATA_BUF_F256_SIZE];
+    char filepath[DATA_BUF_F256_SIZE];
+    char signature[DATA_BUF_F256_SIZE];
     sprintf(filepath, "/mnt/internal/internal_storage/%s", cmdobj.file.name);
     sprintf(signature, "/mnt/internal/internal_storage/%s", cmdobj.file.sign.name);
     if (sysman_rpc_transport_open() == VOS_OK) {
-        ret = software_management_action_call_load_software(filepath, signature, errmsg, DATA256_LEN);
+        ret = software_management_action_call_load_software(filepath, signature, errmsg, DATA_BUF_F256_SIZE);
         sysman_rpc_transport_close();
         if (ret != VOS_OK) {
             sprintf(errormsg, "%s", errmsg);
@@ -517,7 +517,7 @@ int sg_down_update_host(device_upgrade_s cmdobj, char *errormsg)
 int sg_down_update_patch(device_upgrade_s cmdobj, char *errormsg)
 {
     int ret = VOS_OK;
-    char errmsg[DATA256_LEN];
+    char errmsg[DATA_BUF_F256_SIZE];
 
     //ret = software_management_action_call_install_patch(const char* filepath, const char* signature, bool force_flag, char* errmsg, size_t msglen);
 

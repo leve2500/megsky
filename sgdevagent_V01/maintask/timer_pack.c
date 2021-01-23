@@ -56,7 +56,7 @@ static int sg_timer_heart_callback(void)
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    sprintf_s(item->pubtopic, DATA256_LEN, "%s", get_topic_device_request_pub());
+    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_request_pub());
     ret = sg_pack_dev_heartbeat_request_data(item->msg_send);
     if (VOS_OK != ret) {
         printf("sg_pack_dev_heartbeat_request_data fail.\n");

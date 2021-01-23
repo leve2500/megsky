@@ -31,10 +31,10 @@ static void sg_pack_dev_upgrade_status(int16_t code, int32_t mid)
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    char errormsg[DATA256_LEN];
-    sprintf_s(errormsg, DATA256_LEN, "%s", "command success");
+    char errormsg[DATA_BUF_F256_SIZE];
+    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
-    sprintf_s(item->pubtopic, DATA256_LEN, "%s", get_topic_sub_dev_res());
+    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_sub_dev_res());
     ret = sg_pack_dev_install_query(code, mid, errormsg, device_upgrade_status, item->msg_send);
     if (VOS_OK != ret) {
         printf("\n sg_pack_dev_install_query fail.");
@@ -58,13 +58,13 @@ static void sg_pack_container_upgrade_status(int32_t mid, int32_t jobId)
         code = REQUEST_FAILED;
     }
 
-    char errormsg[DATA256_LEN];
-    sprintf_s(errormsg, DATA256_LEN, "%s", "command success");
+    char errormsg[DATA_BUF_F256_SIZE];
+    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    sprintf_s(item->pubtopic, DATA256_LEN, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
     ret = sg_pack_dev_install_query(code, mid, errormsg, status, item->msg_send);
     if (VOS_OK != ret) {
         printf("\n sg_pack_dev_install_query fail.");
@@ -89,12 +89,12 @@ static void sg_pack_app_upgrade_status(int32_t mid, int32_t jobId)
         code = REQUEST_FAILED;
     }
 
-    char errormsg[DATA256_LEN];
-    sprintf_s(errormsg, DATA256_LEN, "%s", "command success");
+    char errormsg[DATA_BUF_F256_SIZE];
+    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA256_LEN, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
     ret = sg_pack_dev_install_query(code, mid, errormsg, status, item->msg_send);
     if (VOS_OK != ret) {
         printf("\n sg_pack_dev_install_query fail.");

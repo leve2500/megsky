@@ -121,7 +121,7 @@ int json_into_array_string(char *sdata, json_t *jdata)
     }
 
     test = json_string_value(jdata);
-    memcpy_s(sdata, DATA256_LEN, test, strlen(test) + 1);
+    memcpy_s(sdata, DATA_BUF_F256_SIZE, test, strlen(test) + 1);
     printf("sdata=%s.\n", sdata);
 
     return VOS_OK;
@@ -274,7 +274,7 @@ char *sg_pack_json_msg_header(uint16_t code, int32_t mid, const char *type, cons
 {
     time_t now_time;
     now_time = time(NULL);
-    char timestamp[DATA32_LEN];
+    char timestamp[DATA_BUF_F32_SIZE];
     char *result = NULL;
     //×ª»»json
     json_t *piload = NULL;

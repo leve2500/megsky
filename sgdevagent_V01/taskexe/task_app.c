@@ -46,15 +46,15 @@ int sg_app_install(app_install_cmd_s cmdobj, char *errmsg)
     status.progress = 80;
     status.state = STATUS_EXE_INSTALL;
     set_app_install_status(status);
-    memcpy_s(para.lxc_name, DATA64_LEN, cmdobj.container, strlen(cmdobj.container) + 1);  //容器名称赋值	 
-    memcpy_s(para.app_name, DATA64_LEN, cmdobj.app, strlen(cmdobj.app) + 1);              //app名称	
-    sprintf_s(para.app_file, DATA128_LEN, "%s/%s", DEFAULT_FILE_PATH, cmdobj.file.name);
+    memcpy_s(para.lxc_name, DATA_BUF_F64_SIZE, cmdobj.container, strlen(cmdobj.container) + 1);  //容器名称赋值	 
+    memcpy_s(para.app_name, DATA_BUF_F64_SIZE, cmdobj.app, strlen(cmdobj.app) + 1);              //app名称	
+    sprintf_s(para.app_file, DATA_BUF_F128_SIZE, "%s/%s", DEFAULT_FILE_PATH, cmdobj.file.name);
     if (ssp_calculate_sha256_of_file(para.app_file, para.app_hash, APP_MANAGEMENT_APP_HASH_MAX_LEN + 1)) {
         (void)printf("permission denied.\r\n");
         sprintf_s(errmsg, APP_MANAGEMENT_ERRMSG_MAX_LEN, "permission denied");
         return VOS_ERR;
     }
-    // memcpy_s(para.app_file, DATA128_LEN, cmdobj.file.name ,strlen(cmdobj.file.name)+1);  //app文件	 
+    // memcpy_s(para.app_file, DATA_BUF_F128_SIZE, cmdobj.file.name ,strlen(cmdobj.file.name)+1);  //app文件	 
     cpus = cmdobj.cfgCpu.cpus;
     para.cpu_mask = 0;
     for (i = 0; i < cpus; i++) {
@@ -105,10 +105,10 @@ int sg_container_with_app_install(container_install_cmd_s *cmdobj, char *errmsg)
     status.state = STATUS_EXE_INSTALL;
 
     set_app_install_status(status);
-    memcpy_s(para.lxc_name, DATA64_LEN, cmdobj->container, strlen(cmdobj->container) + 1);  //容器名称赋值	 
-    memcpy_s(para.app_name, DATA64_LEN, cmdobj->withAPP.file.name, strlen(cmdobj->withAPP.file.name) + 1);   //app名称	未知？
-    sprintf_s(para.app_file, DATA128_LEN, "%s/%s", DEFAULT_FILE_PATH, cmdobj->withAPP.file.name);
-    // memcpy_s(para.app_file, DATA128_LEN, cmdobj.file.name ,strlen(cmdobj.file.name)+1);  //app文件	 
+    memcpy_s(para.lxc_name, DATA_BUF_F64_SIZE, cmdobj->container, strlen(cmdobj->container) + 1);  //容器名称赋值	 
+    memcpy_s(para.app_name, DATA_BUF_F64_SIZE, cmdobj->withAPP.file.name, strlen(cmdobj->withAPP.file.name) + 1);   //app名称	未知？
+    sprintf_s(para.app_file, DATA_BUF_F128_SIZE, "%s/%s", DEFAULT_FILE_PATH, cmdobj->withAPP.file.name);
+    // memcpy_s(para.app_file, DATA_BUF_F128_SIZE, cmdobj.file.name ,strlen(cmdobj.file.name)+1);  //app文件	 
     cpus = cmdobj->withAPP.cfgCpu.cpus;
     para.cpu_mask = 0;
     for (i = 0; i < cpus; i++) {

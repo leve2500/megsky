@@ -18,6 +18,7 @@
 #include "sysman_rpc_api.h"
 
 #include "sgdev_struct.h"
+#include "sgdev_debug.h"
 #include "sgdev_param.h"
 #include "task_link.h"               //×Ô¼ºµÄ
 #include "mqtt_json.h"

@@ -8,7 +8,7 @@
 #include "vrp_event.h"
 
 #include "sgdev_param.h"
-#include "sgdev_struct.h"
+
 #include "mqtt_json.h"
 
 json_t *load_json(const char *text)

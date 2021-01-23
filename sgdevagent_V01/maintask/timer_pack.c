@@ -13,15 +13,16 @@
 #include "vrp_task.h"
 #include "vrp_timer.h"
 
-#include "sgdev_struct.h
-#include "sgdev_queue.h
+#include "sgdev_struct.h"
+#include "sgdev_queue.h"
 #include "timer_pack.h"
 #include "mqtt_json.h"
 #include "mqtt_dev.h"
 #include "mqtt_pub.h"
-"
+
 #include "thread_dev_insert.h"
 #include "task_deal.h"
+
 //示例
 unsigned int g_timer_task_id = 0;
 unsigned int g_timer_queue_id = 0;

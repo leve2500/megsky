@@ -2,6 +2,7 @@
 #ifndef _MQTT_JSON_H_
 #define _MQTT_JSON_H_
 
+#include "sgdev_struct.h"
 
 #ifdef __cplusplus
 extern "C" {

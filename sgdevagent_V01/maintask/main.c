@@ -1,9 +1,10 @@
-#include <sys/types.h>
+
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
 
 #include "vrp.h"
 #include "vrp_task.h"
@@ -219,20 +220,18 @@ int main(int argc, char *argv[])
             if (!sg_get_mqtt_connect_flag()) {
                 sg_mqtt_exit();
                 sg_mqtt_init();
-            } else if (!sg_get_mqttclient_isconnected()){
-                    printf("MQTTClient_isConnected false.\n");
-                    sg_mqtt_exit();
-                    sg_mqtt_init();
-                }
+            } else if (!sg_get_mqttclient_isconnected()) {
+                printf("MQTTClient_isConnected false.\n");
+                sg_mqtt_exit();
+                sg_mqtt_init();
             }
             VOS_T_Delay(30 * 1000);  //延时30秒
             if (sg_get_dev_edge_reboot() == REBOOT_EDGE_SET) {
                 break;
             }
         }
-        sg_mqtt_exit();
     }
-
+    sg_mqtt_exit();
     sg_exit();
 
 main_error:

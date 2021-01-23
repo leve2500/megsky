@@ -17,16 +17,16 @@
 #include "sysman_rpc_api.h"
 #include "app_management_service_api.h"
 
+#include "sgdev_struct.h"
+#include "sgdev_curl.h"
+#include "sgdev_queue.h"
 
+#include "sgdev_debug.h"
 #include "task_app.h"
 #include "task_container.h"
 #include "task_deal.h"
 #include "task_link.h"
-
 #include "timer_pack.h"
-#include "sgdev_curl.h"
-#include "sgdev_queue.h"
-#include "sgdev_struct.h"
 #include "mqtt_json.h"
 #include "mqtt_pub.h"
 

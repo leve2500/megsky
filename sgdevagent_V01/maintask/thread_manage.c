@@ -1,8 +1,12 @@
 #include "vos_typdef.h"
+#include "vos_errno.h"
+#include "vrp_mem.h"
+#include "ssp_mid.h"
 #include "vrp_queue.h"
-#include "mqtt_pub.h"
+
 #include "sgdev_struct.h"
 #include "sgdev_queue.h"
+#include "mqtt_pub.h"
 #include "thread_dev_insert.h"
 #include "thread_manage.h"
 #include "rmt_socket.h"

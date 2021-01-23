@@ -4,7 +4,9 @@
 #include <string.h>
 #include "vos_typdef.h"
 #include "vos_errno.h"
-#include "vos_mem.h"
+#include "vrp_mem.h"
+#include "vrp_event.h"
+
 #include "vrp_task.h"
 #include "vrp_queue.h"
 #include "ssp_mid.h"

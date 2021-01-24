@@ -11,12 +11,10 @@
 #include "sgdev_struct.h"
 
 
-static char* ii_strncpy(char *io_pDst, const char *i_pSrc, int i_nLen)
+static char* sg_strncpy(char *io_pDst, const char *i_pSrc, int i_nLen)
 {
-    if (NULL != io_pDst)
-    {
-        if (NULL != i_pSrc && i_nLen >= 0)
-        {
+    if (NULL != io_pDst) {
+        if (NULL != i_pSrc && i_nLen >= 0) {
             strncpy(io_pDst, i_pSrc, i_nLen);
             io_pDst[i_nLen] = '\0';
         } else
@@ -24,19 +22,20 @@ static char* ii_strncpy(char *io_pDst, const char *i_pSrc, int i_nLen)
             io_pDst[0] = '\0';
         }
     }
+
     return io_pDst;
 }
 
-//统计无符号长整数二进制表示中1的个数
-//Hamming_weight算法二---只考虑1的位数
+// 统计无符号长整数二进制表示中1的个数
+// Hamming_weight算法二---只考虑1的位数
 unsigned long long sg_hamming_weight(unsigned long long number)
 {
     int count_ = 0; //声明计数变量
-
     while (number != 0) { //遍历
         number &= number - 1;
         count_++;
     }
+
     return count_;
 }
 //从Index处开始搜索第num次出现字符串i_pStr的位置
@@ -83,7 +82,7 @@ int sg_str_left(char *pData, int m_nLen, char *dData, int i_nLen)
     else
         t_nLen = i_nLen;
 
-    ii_strncpy(dData, pData, t_nLen);
+    sg_strncpy(dData, pData, t_nLen);
 
     return t_nLen;
 }
@@ -106,7 +105,7 @@ int sg_str_mid(char *pData, int m_nLen, int i_nIndex, char *dData, int i_nLen)
     else
         t_nLen = i_nLen;
 
-    ii_strncpy(dData, pData + i_nIndex, t_nLen);
+    sg_strncpy(dData, pData + i_nIndex, t_nLen);
     return t_nLen;
 }
 //输入参数  : char *pData  : 要搜索数据的首地址
@@ -128,7 +127,7 @@ int sg_str_right(char *pData, int m_nLen, char *dData, int i_nLen)
     else
         t_nLen = i_nLen;
 
-    ii_strncpy(dData, pData + m_nLen - t_nLen, t_nLen);
+    sg_strncpy(dData, pData + m_nLen - t_nLen, t_nLen);
 
     return t_nLen;
 }
@@ -147,7 +146,7 @@ int sg_str_colon(char *pData, int m_nLen, char *ldDatal, char *rdData)
             return VOS_ERR;
         }
     } else {
-        ii_strncpy(ldDatal, pData, m_nLen);
+        sg_strncpy(ldDatal, pData, m_nLen);
     }
 
     return VOS_OK;

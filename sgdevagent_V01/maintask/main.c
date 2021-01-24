@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
+#include <signal.h>
 #include <sys/types.h>
 
 #include "vrp.h"
@@ -24,6 +25,9 @@
 #include "rmt_socket.h"
 #include "mqtt_pub.h"
 
+void sgdevagent_ignore_sig(int signum);
+void sgdevagent_sighandler(int signo);
+void sg_handle_signal(void);
 
 uint32_t create_dev_ins_id = 0;
 uint32_t create_bus_int_id = 0;
@@ -35,6 +39,57 @@ uint32_t create_socket_read_id = 0;
 uint32_t create_socket_write_id = 0;
 uint32_t create_event_id = 0;
 
+
+void sgdevagent_ignore_sig(int signum)
+{
+    struct sigaction sa;
+    (void)memset_s(&sa, sizeof(sa), 0, sizeof(sa));
+    sa.sa_handler = SIG_IGN;
+    (void)sigaction(signum, &sa, 0);
+}
+
+void sgdevagent_sighandler(int signo)
+{
+    SGDEV_NOTICE(SYSLOG_LOG, EG_MODULE, "sgdevagent receive sigo:%d",signo);
+    switch (signo)
+    {
+    case SIGQUIT:
+    case SIGILL:
+    case SIGBUS:
+    case SIGFPE:
+    case SIGSEGV:
+        SSP_Backtrace("ACAGENT");
+        break;
+    default:
+        break;
+    }
+
+    (void)kill(getpid(), signo);
+    return;
+}
+
+void sg_handle_signal(void)
+{
+    struct sigaction action;
+
+    (void)sigemptyset(&action.sa_mask);
+    action.sa_flags = (int)(SA_NODEFER | SA_ONESHOT | SG_SIGINFO);
+    action.sa_handler = sgdevagent_sighandler;
+
+    (void)sigaction(SIGINT, &action, NULL);          // 2 中断进程
+    (void)sigaction(SIGQUIT, &action, NULL);         // 3 终止进程
+    (void)sigaction(SIGILL, &action, NULL);          // 4 非法指令
+    (void)sigaction(SIGBUS, &action, NULL);          // 7 总线错误
+    (void)sigaction(SIGFPE, &action, NULL);          // 8 浮点异常
+    (void)sigaction(SIGSEGV, &action, NULL);         // 11 段非法错误
+    (void)sigaction(SIGTERM, &action, NULL);         // 15 软件终止
+    (void)sigaction(SIGXCPU, &action, NULL);         // 24 CPU资源限制
+    (void)sigaction(SIGXFSZ, &action, NULL);         // 25 文件大小限制
+    (void)sigaction(SIGSYS, &action, NULL);          // 31 系统调用异常
+
+    return;
+
+}
 static void sg_create_task(void)
 {
     sg_dev_param_info_s param = sg_get_param();
@@ -193,37 +248,63 @@ static int sg_exit()
 
 int main(int argc, char *argv[])
 {
-    int ch;
-    int rc;
-    int nRet = 0;
+    int ret = 0;
 
-    sg_log_init(); //日志初始化
-    nRet = SSP_Init();
-    if (nRet != VOS_OK) {
+    pthread_cond_t main_cond = PTHREAD_COND_INITIALIZER;
+    pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+    (void)signal(SIGPIPEN);
+    (void)signal(SIGRTMIN + 4, SIG_IGN);
+
+    sg_log_init();      // 日志初始化
+
+    ret = (int)SSP_Init();
+    if(ret != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "SSP_Init failed ret:%d",ret);
         goto main_error;
     }
 
-    read_param_file();      //读参数文件
-    read_period_file();     //读周期参数
-    sg_init();
+    //读参数文件
+    if (read_param_file() != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "read_param_file failed");
+        goto main_error;
+    }
+
+    //读周期参数
+    if (read_period_file() != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "read_period_file failed");
+        goto main_error;
+    } 
+    if (sg_init() != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "sg_init failed");
+        goto main_error;
+    }
+
     sg_dev_param_info_s param = sg_get_param();
+
+    //信号处理
+    sg_handle_signal();
 
     if (MODE_RMTMAN == param.startmode) {
         sg_sockket_init();
         while (1) {
             VOS_T_Delay(30 * 1000);
         }
-        nRet = sg_sockket_exit();
+        ret = sg_sockket_exit();
     } else {
-        nRet = sg_mqtt_init();
-        while (1) {
-            if (!sg_get_mqtt_connect_flag()) {
-                sg_mqtt_exit();
-                sg_mqtt_init();
-            } else if (!sg_get_mqttclient_isconnected()) {
-                printf("MQTTClient_isConnected false.\n");
-                sg_mqtt_exit();
-                sg_mqtt_init();
+        if (sg_mqtt_init() != VOS_OK) {
+            SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "sg_mqtt_init failed");
+            goto main_error;
+        }
+        for (;;) {
+            if (sg_get_mqtt_connect_flag() != V0S_OK) {
+                if (sg_agent_mqtt_connect() != VOS_OK) {
+                    continue;
+                }            
+                if (sg_create_sub_topic() != VOS_OK) {
+                    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "mqtt connect subscribe failed.\n");
+                    goto main_error;
+                }
             }
             VOS_T_Delay(30 * 1000);  //延时30秒
             if (sg_get_dev_edge_reboot() == REBOOT_EDGE_SET) {
@@ -231,11 +312,16 @@ int main(int argc, char *argv[])
             }
         }
     }
+    //for (;;) {
+    //    (void)pthread_mutex_lock(&main_mutex);
+    //    (void)pthread_cond_wait(&main_cond, &main_mutex);
+    //    (void)pthread_mutex_unlock(&main_mutex);
+    //}
     sg_mqtt_exit();
     sg_exit();
 
 main_error:
     sg_log_close();
-    return nRet;
+    return ret;
 }
 

@@ -226,7 +226,7 @@ typedef enum {
     TAG_CMD_CON_STOP,                       // 容器停止,容器停止控制应答
     TAG_CMD_CON_REMOVE,                     // 删除容器,容器删除控制应答
     TAG_CMD_CON_SET_CONFIG,                 // 容器配置修改,容器配置修改应答
-    TAG_CMD_CON_GET_CONFIG,                 // 容器配置查询,容器配置查询应答 
+    TAG_CMD_CON_GET_CONFIG,                 // 容器配置查询,容器配置查询应答
     TAG_CMD_CON_STATUS,                     // 容器状态查询,容器状态查询应答
     TAG_REP_CON_STATUS,                     // 容器状态上报
     TAG_EVENT_CON_ALARM,                    // 容器事件上报
@@ -243,7 +243,7 @@ typedef enum {
     TAG_CMD_APP_GET_CONFIG,                 // 应用配置查询命令,应用配置查询应答
     TAG_CMD_APP_STATUS,                     // 应用状态查询命令,应用状态查询应答
     TAG_REP_APP_STATUS,                     // 应用状态上报
-    TAG_EVENT_APP_ALARM,                    // 应用事件上报 
+    TAG_EVENT_APP_ALARM,                    // 应用事件上报
     TAG_CMD_APP_UPGRADE,                    // 应用升级命令,应用升级命令应答
     TAG_CMD_APP_LOG                         // 应用日志召回,应用日志召回应答
 } cmd_tag_t;
@@ -338,7 +338,7 @@ typedef struct cfg_disk_info {
 // A.11  数字签证信息字段:sign
 typedef struct sign_info {
     char            name[DATA_BUF_F64_SIZE];          // 数字证书文件名字
-    char            url[DATA_BUF_F64_SIZE];           // 数字证书文件路径，即 url 地址，如“https://123.123.123.123:6789”
+    char            url[DATA_BUF_F64_SIZE];           // 数字证书文件路径，即 url 地址
     uint32_t        size;                      // 文件的大小，单位： KBytes
     char            md5[DATA_BUF_F64_SIZE];           // 数字证书文件的 md5 值，用于校验文件
 }sign_info_s;
@@ -347,7 +347,7 @@ typedef struct sign_info {
 typedef struct file_info {
     char            name[DATA_BUF_F64_SIZE];          // 文件的名字
     char            fileType[DATA_BUF_F64_SIZE];      // 文件类型，如压缩文件（tar）等，由平台和终端统一规定
-    char            url[DATA_BUF_F64_SIZE];           // 文件路径，即 url 地址，如“https://123.123.123.123:6789”
+    char            url[DATA_BUF_F64_SIZE];           // 文件路径，即 url 地址，
     uint32_t        size;                      // 文件的大小，单位： KBytes
     char            md5[DATA_BUF_F64_SIZE];           // 文件的 md5 值，用于校验文件
     sign_info_s     sign;                      // 文件的数字签证信息
@@ -356,11 +356,11 @@ typedef struct file_info {
 
 /* 设备参数 */
 typedef struct sg_dev_param_info {
-    uint8_t         startmode;                   // 启动模式 0正常 1专检
-    char            mqtttopicversion[DATA_BUF_F32_SIZE];// 协议版本 目前为v1
-    char            devid[DATA_BUF_F32_SIZE];           // 设备ID   字符串
-    char            ip[DATA_BUF_F32_SIZE];              // IP地址   字符串
-    uint32_t        port;                        // 端口号
+    uint8_t         startmode;                              // 启动模式 0正常 1专检
+    char            mqtttopicversion[DATA_BUF_F32_SIZE];    // 协议版本 目前为v1
+    char            devid[DATA_BUF_F32_SIZE];               // 设备ID   字符串
+    char            ip[DATA_BUF_F32_SIZE];                  // IP地址   字符串
+    uint32_t        port;                                   // 端口号
     char            clientid[DATA_BUF_F32_SIZE];
     char            user[DATA_BUF_F32_SIZE];
     char            password[DATA_BUF_F32_SIZE];
@@ -386,6 +386,6 @@ typedef struct sg_period_info {
 
 #ifdef __cplusplus
 }
-#endif 
+#endif
 
 #endif

@@ -21,6 +21,7 @@ extern "C" {
 #endif
 
 int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg);
+int sg_container_update(container_install_cmd_s *cmdobj, char *errmsg);
 
 #ifdef __cplusplus
 }

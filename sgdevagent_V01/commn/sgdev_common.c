@@ -26,17 +26,16 @@ static char* sg_strncpy(char *io_pdst, const char *i_psrc, int i_nlen)
     return io_pdst;
 }
 
-// 统计无符号长整数二进制表示中1的个数
-// Hamming_weight算法二---只考虑1的位数
+// 统计无符号长整数二进制表示中1的个数 Hamming_weight算法二---只考虑1的位数
 unsigned long long sg_hamming_weight(unsigned long long number)
 {
-    int count_ = 0; //声明计数变量
-    while (number != 0) { //遍历
+    int count = 0;
+    while (number != 0) { 
         number &= number - 1;
-        count_++;
+        count++;
     }
 
-    return count_;
+    return count;
 }
 //从Index处开始搜索第num次出现字符串i_pstr的位置
 int sg_find(char *m_pbuf, int m_nlen, const char *i_pstr, int i_nnum, int i_nindex)
@@ -64,11 +63,11 @@ int sg_find(char *m_pbuf, int m_nlen, const char *i_pstr, int i_nnum, int i_nind
     return (int)(pos - m_pbuf);
 }
 
-//从字符串左开始向左取i_nlen长度的字符串
- //输入参数  : char *p_data  : 要搜索数据的首地址
- //m_nlen ：输入长度
- //d_data ：输出指针
- //i_nlen ：截取个数
+// 从字符串左开始向左取i_nlen长度的字符串
+// 输入参数  : char *p_data  : 要搜索数据的首地址
+// m_nlen ：输入长度
+// d_data ：输出指针
+// i_nlen ：截取个数
 int sg_str_left(char *p_data, int m_nlen, char *d_data, int i_nlen)
 {
     int t_nLen = 0;

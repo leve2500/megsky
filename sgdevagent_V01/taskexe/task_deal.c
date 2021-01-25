@@ -1457,38 +1457,58 @@ void sg_handle_app_status_get(int32_t mid, char *container_name)
     sg_push_pack_item(item);
 
 }
-//应用升级  先略过
+//应用升级  
 void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmdobj)
 {
+    printf("sgdevagent**** : sg_handle_app_upgrade_cmd  mid= %d.\n", mid);
     mqtt_data_info_s *item = NULL;
-    uint16_t code = REQUEST_SUCCESS;
+    uint16_t code = REQUEST_WAIT;
     char errormsg[DATA_BUF_F256_SIZE];
+    APPM_OPERATION_PARA para = { 0 };
+    dev_status_reply_s status = { 0 };
+    dev_upgrede_res_reply_s statusobj = { 0 };
+
+    statusobj.jobId = cmdobj.jobId;
+    status.jobId = cmdobj.jobId;
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
-    //先应答
-    if (code != REQUEST_SUCCESS) {
-        sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
-    }
+    status.state = STATUS_PRE_DOWNLOAD;
+    set_app_upgrade_status(status);		//设置开始状态
+
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
     sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
-
-    sg_pack_app_upgrade_cmd(code, mid, errormsg, item->msg_send);
+    sg_pack_app_upgrade_cmd(code, mid, errormsg, item->msg_send);    //收到命令先返回
     sg_push_pack_item(item);
-    //中间件执行
-    // cmdobj.jobId = 
-    // cmdobj.policy = 
-    // cmdobj.version = 
-    // cmdobj.container = 
-    // cmdobj.file.name = 
-    // cmdobj.file.fileType = 
-    // cmdobj.file.url = 
-    // cmdobj.file.size = 
-    // cmdobj.file.md5 = 
-    // cmdobj.file.sign.name = 
-    // cmdobj.file.sign.url = 
-    // cmdobj.file.sign.size = 
-    // cmdobj.file.sign.md5 = 
+
+    code = REQUEST_SUCCESS;
+    status.state = STATUS_EXE_DOWNLOAD;
+    set_app_upgrade_status(status);		//设置正在下载
+    printf("sgdevagent**** : sg_file_download  cmdobj.file= %s.\n", cmdobj.file);
+    if (sg_file_download(cmdobj.file, statusobj.msg) != VOS_OK) {
+        code = REQUEST_NOTEXITS;
+        statusobj.code = REQUEST_NOTEXITS;
+    }
+    status.state = STATUS_PRE_INSTALL;
+    set_app_upgrade_status(status);		//开始安装
+    if (cmdobj.policy > 0) { //需要开启另外的线程吗？ 重开定时器 		//向线程发送任务
+        return;
+        VOS_T_Delay(cmdobj.policy * 1000);
+    }
+    if (sg_app_update(cmdobj, statusobj.msg) != VOS_OK) {
+        code = REQUEST_REFUSE;
+        statusobj.code = REQUEST_REFUSE;
+    }
+    printf("sgdevagent**** : sg_app_install  statusobj.msg= %s.\n", statusobj.msg);
+    status.state = STATUS_FINISH_INSTALL;
+    set_app_install_status(status);		//设置安装完成
+    mqtt_data_info_s *sitem = NULL;
+    sitem = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
+    (void)memset_s(sitem, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
+    sprintf_s(sitem->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_data_pub());
+    sg_pack_dev_install_result(statusobj, errormsg, sitem->msg_send);    //发送结果
+    sg_push_pack_item(sitem);
+ 
 }
 
 //应用日志查询

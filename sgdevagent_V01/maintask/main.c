@@ -30,15 +30,14 @@ void sgdevagent_ignore_sig(int signum);
 void sgdevagent_sighandler(int signo);
 void sg_handle_signal(void);
 
-uint32_t create_dev_ins_id = 0;
-uint32_t create_bus_int_id = 0;
-uint32_t create_tsk_exe_dev_id = 0;
-uint32_t create_tsk_exe_con_id = 0;
-uint32_t create_tsk_exe_app_id = 0;
-uint32_t create_mqt_pub_id = 0;
-uint32_t create_socket_read_id = 0;
-uint32_t create_socket_write_id = 0;
-uint32_t create_event_id = 0;
+uint32_t g_create_dev_ins_id = 0;
+uint32_t g_create_bus_int_id = 0;
+uint32_t g_create_tsk_exe_dev_id = 0;
+uint32_t g_create_tsk_exe_con_id = 0;
+uint32_t g_create_tsk_exe_app_id = 0;
+uint32_t g_create_mqt_pub_id = 0;
+uint32_t g_create_socket_read_id = 0;
+uint32_t g_create_socket_write_id = 0;
 
 
 void sgdevagent_ignore_sig(int signum)
@@ -96,53 +95,53 @@ static void sg_create_task(void)
     sg_dev_param_info_s param = sg_get_param();
     VOS_UINT32 ret = 0;
 
-    ret = VOS_T_Create("devI", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_dev_insert_thread,                                        //启动任务1 设备接入线程
-        &create_dev_ins_id);
+    ret = (int)VOS_T_Create("devI", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_dev_insert_thread,                                        //启动任务1 设备接入线程
+        &g_create_dev_ins_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Create DEV insert fail ret = %d!", ret);
     }
 
-    ret = VOS_T_Create("busi", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)bus_inter_thread, &create_bus_int_id);                        //业务交互线程
+    ret = VOS_T_Create("busi", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)bus_inter_thread, &g_create_bus_int_id);                        //业务交互线程
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Create businter fail! ret = %d!", ret);
     }
 
     ret = VOS_T_Create("edev", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_task_execution_dev_thread,                                  //任务执行线程
-        &create_tsk_exe_dev_id);
+        &g_create_tsk_exe_dev_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Create task exe dev fail! ret = %d!", ret);
     }
 
     ret = VOS_T_Create("econ", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_task_execution_container_thread,                            //容器操作类
-        &create_tsk_exe_con_id);
+        &g_create_tsk_exe_con_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Create task exe container fail! ret = %d!", ret);
     }
 
     ret = VOS_T_Create("eapp", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_task_execution_app_thread,                                   //app操作类
-        &create_tsk_exe_app_id);
+        &g_create_tsk_exe_app_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Create task exe app fail! ret = %d!", ret);
     }
-    // //事件处理
-    // ret = VOS_T_Create("eventpro",VOS_T_PRIORITY_NORMAL,0,0,0,(TaskStartAddress_PF)sg_event_deal_thread,&create_event_id);
-    // if(ret != VOS_OK){
-    //     printf(" \n VOS_T_Create task exe app fail!");
-    // }
+    // 事件处理
+     ret = (int)VOS_T_Create("skmg",VOS_T_PRIORITY_NORMAL,0,0,0,(TaskStartAddress_PF)sg_event_deal_thread,&g_create_event_id);
+     if(ret != VOS_OK){
+         printf(" \n VOS_T_Create task exe app fail!");
+     }
     if (MODE_RMTMAN == param.startmode) {                                                                                                           //socket收、发数据线程       
         ret = VOS_T_Create("sred", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_rpc_read_data_thread,
-            &create_socket_read_id);
+            &g_create_socket_read_id);
         if (ret != VOS_OK) {
             printf(" \n VOS_T_Create socket read fail! ret = %d!", ret);
         }
         ret = VOS_T_Create("swte", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_rpc_write_data_thread,
-            &create_socket_write_id);
+            &g_create_socket_write_id);
         if (ret != VOS_OK) {
             printf(" \n VOS_T_Create socket write fail! ret = %d!", ret);
         }
     } else {                                                                                                                                        //发布mqtt线程
         ret = VOS_T_Create("mqtp", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_mqtt_pub_thread,
-            &create_mqt_pub_id);
+            &g_create_mqt_pub_id);
         if (ret != VOS_OK) {
             printf(" \n VOS_T_Create mqttpub fail! ret = %d!", ret);
         }
@@ -153,41 +152,41 @@ static void sg_destroy_task(void)
 {
     sg_dev_param_info_s param = sg_get_param();
     VOS_UINT32 ret = 0;
-    ret = VOS_T_Delete(create_dev_ins_id);
+    ret = VOS_T_Delete(g_create_dev_ins_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Delete DEV insert fail!");
     }
-    ret = VOS_T_Delete(create_bus_int_id);
+    ret = VOS_T_Delete(g_create_bus_int_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Delete businter fail!");
     }
-    ret = VOS_T_Delete(create_tsk_exe_dev_id);
+    ret = VOS_T_Delete(g_create_tsk_exe_dev_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Delete taskexe fail!");
     }
-    ret = VOS_T_Delete(create_tsk_exe_con_id);
+    ret = VOS_T_Delete(g_create_tsk_exe_con_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Delete taskexe fail!");
     }
-    ret = VOS_T_Delete(create_tsk_exe_app_id);
+    ret = VOS_T_Delete(g_create_tsk_exe_app_id);
     if (ret != VOS_OK) {
         printf(" \n VOS_T_Delete taskexe fail!");
     }
-    ret = VOS_T_Delete(create_event_id);
+    ret = VOS_T_Delete(g_create_event_id);
     if (ret != VOS_OK) {
-        printf(" \n VOS_T_Delete create_event_id fail!");
+        printf(" \n VOS_T_Delete g_create_event_id fail!");
     }
     if (MODE_RMTMAN == param.startmode) {            //socket收、发数据线程
-        ret = VOS_T_Delete(create_socket_read_id);
+        ret = VOS_T_Delete(g_create_socket_read_id);
         if (ret != VOS_OK) {
-            printf(" \n VOS_T_Delete create_socket_read_id fail!");
+            printf(" \n VOS_T_Delete g_create_socket_read_id fail!");
         }
-        ret = VOS_T_Delete(create_socket_write_id);
+        ret = VOS_T_Delete(g_create_socket_write_id);
         if (ret != VOS_OK) {
-            printf(" \n VOS_T_Delete create_socket_write_id fail!");
+            printf(" \n VOS_T_Delete g_create_socket_write_id fail!");
         }
     } else {
-        ret = VOS_T_Delete(create_mqt_pub_id);
+        ret = VOS_T_Delete(g_create_mqt_pub_id);
         if (ret != VOS_OK) {
             printf(" \n VOS_T_Delete mqttpub fail!");
         }

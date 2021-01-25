@@ -38,7 +38,18 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
     status.jobId = cmdobj->jobId;
     char left_obj[DATA_BUF_F64_SIZE] = {0};
     char right_obj[DATA_BUF_F64_SIZE] = { 0 };
-    int i = 0;
+    int i = 0;   
+    install_info.container_name = (char *)VOS_Malloc(MID_SGDEV, strlen(cmdobj->container) + 1);
+    install_info.ova_name = (char *)VOS_Malloc(MID_SGDEV, strlen(cmdobj->image.name) + 1);
+
+    if (install_info.container_name == NULL) {
+        return VOS_ERR;
+    }
+
+    if (install_info.ova_name == NULL) {
+        return VOS_ERR;
+    }
+
     int cpus = cmdobj->cfgCpu.cpus;
     memcpy_s(install_info.container_name, DATA_BUF_F64_SIZE, cmdobj->container, strlen(cmdobj->container) + 1);  //ÈİÆ÷Ãû³Æ¸³Öµ	 
     memcpy_s(install_info.ova_name, DATA_BUF_F64_SIZE, cmdobj->image.name, strlen(cmdobj->image.name) + 1);  //¾µÏñÃû³Æ¸³Öµ
@@ -112,5 +123,10 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
     return ret;
 
 
+
+}
+
+int sg_container_update(container_install_cmd_s *cmdobj, char *errmsg)
+{
 
 }

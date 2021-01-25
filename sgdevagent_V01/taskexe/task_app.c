@@ -32,6 +32,51 @@
 #include "timer_pack.h"
 #include "thread_interact.h"
 
+
+int sg_app_update(app_upgrade_cmd_s cmdobj, char *errmsg)
+{
+    int cpus = 0;
+    int i = 0;
+    int ret = VOS_OK;
+    dev_status_reply_s status = { 0 };
+    APPM_OPERATION_PARA para = { 0 };
+    appm_error_message err_msg;
+
+    status.jobId = cmdobj.jobId;
+    status.progress = 80;
+    status.state = STATUS_EXE_INSTALL;
+    set_app_install_status(status);
+    memcpy_s(para.lxc_name, DATA_BUF_F64_SIZE, cmdobj.container, strlen(cmdobj.container) + 1);  //容器名称赋值	 
+    sprintf_s(para.app_file, DATA_BUF_F128_SIZE, "%s/%s", DEFAULT_FILE_PATH, cmdobj.file.name);
+    if (ssp_calculate_sha256_of_file(para.app_file, para.app_hash, APP_MANAGEMENT_APP_HASH_MAX_LEN + 1)) {
+        (void)printf("permission denied.\r\n");
+        sprintf_s(errmsg, APP_MANAGEMENT_ERRMSG_MAX_LEN, "permission denied");
+        return VOS_ERR;
+    }
+   
+    if (cmdobj.file.sign.size != 0 || strlen(cmdobj.file.sign.name) != 0) { //需要签名
+        para.verify = 1;
+    }
+
+    printf("sgdevagent**** : sg_app_install para.verify = %d.\n", para.verify);
+    if (appm_rpc_transport_open() != VOS_OK) {
+        printf("sgdevagent**** : appm_rpc_transport_open failed.\n");
+    }
+
+    if (app_management_action_call_app_install(&para, &err_msg) != VOS_OK) {
+        sprintf_s(errmsg, APP_MANAGEMENT_ERRMSG_MAX_LEN, "app_install:%s", err_msg.errMsg);
+        printf("sgdevagent**** :app_install failed: = %s.\n", err_msg.errMsg);
+        appm_rpc_transport_close();
+        return VOS_ERR;
+    }
+
+    appm_rpc_transport_close();
+    printf("sgdevagent**** : appm_rpc_transport_close.\n");
+
+    //版本检查
+    return ret;
+}
+
 int sg_app_install(app_install_cmd_s cmdobj, char *errmsg)
 {
     int cpus = 0;

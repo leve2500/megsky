@@ -52,7 +52,7 @@ int sg_get_mqttclient_isconnected(void);
 
 void sg_delivered(void *context, MQTTClient_deliveryToken dt)
 {
-    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, Message with token value %d delivery confirmed\n", dt);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "Message with token value %d delivery confirmed\n", dt);
     g_deliveredtoken = dt;
 }
 

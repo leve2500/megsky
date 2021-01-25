@@ -22,10 +22,6 @@ extern "C" {
 
 
 
-
-
- /*========================设备管理================================== */
-
  //设备升级命令
 int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s cmdobj);
 

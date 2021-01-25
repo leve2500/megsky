@@ -152,7 +152,7 @@ int sg_mqtt_pub_thread(void)
     VOS_UINTPTR msg[VOS_QUEUE_MSG_NUM] = { 0 };
     mqtt_data_info_s *info = NULL;
     for (; ;) {
-        if (!sg_get_mqtt_connect_flag()) {
+        if (sg_get_mqtt_connect_flag() == DEVICE_OFFLINE) {
             VOS_T_Delay(1000 * 10);
             continue;
         }

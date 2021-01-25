@@ -61,7 +61,7 @@ static int sg_timer_heart_callback(void)
         //发送设备断开命令？ 不发送
         //日志保存
         printf("The number of heartbeats sent reaches a limit  DEVICE_OFFLINE.\n");
-        // ssp_syslog(LOG_INFO, SYSLOG_LOG, EG_MODULE, "The number of heartbeats sent reaches a limit.");
+        // ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "The number of heartbeats sent reaches a limit.");
     }
 
     if (DEVICE_ONLINE != sg_get_dev_ins_flag()) {

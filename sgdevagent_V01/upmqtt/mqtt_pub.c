@@ -37,8 +37,7 @@ char        g_app_reply_pub[DATA_BUF_F256_SIZE];
 char        g_app_data_pub[DATA_BUF_F256_SIZE];
 
 MQTTClient      g_client = NULL;
-sg_mqtt_msg_arrived_cb g_mqtt_msg_arrived_cb = NULL;
-sg_mqtt_conn_lost_cb g_mqtt_conn_lost_cb = NULL;
+
 
 volatile MQTTClient_deliveryToken g_deliveredtoken;
 MQTTClient_connectOptions g_conn_opts = MQTTClient_connectOptions_initializer;
@@ -48,7 +47,7 @@ int sg_mqtt_msg_arrvd(void *context, char *topicName, int topicLen, MQTTClient_m
 void sg_delivered(void *context, MQTTClient_deliveryToken dt);
 void sg_agent_mqtt_disconnect(void);
 void sg_agent_mqtt_destroy(void);
-int sg_get_mqttclient_isconnected(void);
+
 
 void sg_delivered(void *context, MQTTClient_deliveryToken dt)
 {
@@ -59,15 +58,11 @@ void sg_delivered(void *context, MQTTClient_deliveryToken dt)
 void sg_connLost(void *context, char *cause)
 {
     printf("\n cause: %s\n", cause);
-    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "sg_connLost(cause = %s).\n", cause);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "sg_connLost(cause = %s).\n", cause);
     g_mqtt_connect_flag.mqtt_connect_flag = DEVICE_OFFLINE;
     sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
 }
 
-int sg_get_mqttclient_isconnected(void)
-{
-    return MQTTClient_isConnected(g_client);
-}
 
 int sg_mqtt_msg_arrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
 {
@@ -81,7 +76,7 @@ int sg_mqtt_msg_arrvd(void *context, char *topicName, int topicLen, MQTTClient_m
     mqtt_data_info_s *item = NULL;
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     if (item == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt arrvd malloc item failed.\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt arrvd malloc item failed.\n");
         return VOS_ERR;
     }
 
@@ -110,14 +105,14 @@ void sg_set_mqtt_connect_flag(int flag)
     }
 }
 
-mqtt_connect_data_s sg_get_mqtt_connect_flag(void)
+int sg_get_mqtt_connect_flag(void)
 {
     if (g_mqtt_connect_flag.mqtt_connect_flag == DEVICE_ONLINE) {
-        if (!sg_get_mqttclient_isconnected()) {
+        if (!MQTTClient_isConnected(g_client)) {
             g_mqtt_connect_flag.mqtt_connect_flag = DEVICE_OFFLINE;
         }
     }
-    return g_mqtt_connect_flag;
+    return g_mqtt_connect_flag.mqtt_connect_flag;
 }
 
 int sg_agent_mqtt_init(char *server_uri, char* client_id)
@@ -126,8 +121,8 @@ int sg_agent_mqtt_init(char *server_uri, char* client_id)
     int ret = VOS_OK;
     sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
 
-    if (serveruri == NULL || client_id == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "MQTT Init param failed.\n");
+    if (server_uri == NULL || client_id == NULL) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "MQTT Init param failed.\n");
         return VOS_ERR;
     }
 
@@ -140,19 +135,19 @@ int sg_agent_mqtt_init(char *server_uri, char* client_id)
 
     mqtt_ret = MQTTClient_create(&g_client, server_uri, client_id, MQTTCLIENT_PERSISTENCE_NONE, NULL);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "MQTTClient_create failed(server_uri = %s,clientid = %s,ret = %d).\n",
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "MQTTClient_create failed(server_uri = %s,clientid = %s,ret = %d).\n",
             server_uri, client_id, mqtt_ret);
         return VOS_ERR;
     }
 
-    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "MQTTClient_create success(server_uri = %s,clientid = %s).\n",
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "MQTTClient_create success(server_uri = %s,clientid = %s).\n",
         server_uri, client_id);
     mqtt_ret = MQTTClient_setCallbacks(g_client, NULL, sg_connLost, sg_mqtt_msg_arrvd, sg_delivered);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
         sg_agent_mqtt_destroy();
         return VOS_ERR;
     }
-    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "sg_agent_mqtt_init success(server_uri = %s,clientid = %s).\n",
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "sg_agent_mqtt_init success(server_uri = %s,clientid = %s).\n",
         server_uri, client_id);
     return ret;
 
@@ -164,14 +159,14 @@ int sg_agent_mqtt_connect(void)
     int ret = VOS_OK;
     sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
     if (g_client == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt client id handle invalid).\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt client id handle invalid).\n");
         return VOS_ERR;
     }
 
-    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "mqtt connecting ....\n");
-    mqtt_ret = MQTTClient_connect(g_client, &conn_opts));
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt connecting ....\n");
+    mqtt_ret = MQTTClient_connect(g_client, &g_conn_opts));
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-        SGDEV_WARN(SYSLOG_LOG, EG_MODULE, "mqtt connect failed(ret = %d)).\n", mqtt_ret);
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect failed(ret = %d)).\n", mqtt_ret);
         // 0成功
         // 1拒绝连接，协议版本不支持
         // 2标识符被拒绝
@@ -181,7 +176,7 @@ int sg_agent_mqtt_connect(void)
         sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
         return VOS_ERR;
     }
-    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "mqtt connect  success.\n");
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect  success.\n");
     g_mqtt_connect_flag.mqtt_connect_flag = DEVICE_ONLINE;
     return ret;
 }
@@ -193,7 +188,7 @@ void sg_agent_mqtt_disconnect(void)
         mqtt_ret = MQTTClient_disconnect(g_client, 10000);
         sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
         if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-            SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt disconnect error).\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt disconnect error).\n");
         }
     }
 }
@@ -202,12 +197,9 @@ void sg_agent_mqtt_destroy(void)
 {
     int mqtt_ret;
     if (g_client != NULL) {
-        mqtt_ret = MQTTClient_destroy(&g_client);
-        SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "mqtt destroy.\n");
-        if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-            SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt destroy error).\n");
-            g_client = NULL;
-        }
+        MQTTClient_destroy(&g_client);
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt destroy.\n");
+        g_client = NULL;
     }
 }
 
@@ -219,12 +211,12 @@ int sg_mqtt_msg_publish(char* msg_send, char* pub_topic)
     MQTTClient_deliveryToken token;
     MQTTClient_message pubmsg = MQTTClient_message_initializer;
     if (msg_send == NULL || pub_topic == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt publish param msg_send or pubtopicinvalid.\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt publish param msg_send or pubtopicinvalid.\n");
         return VOS_ERR;
     }
 
     if (g_client == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt client id handle invalid).\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt client id handle invalid).\n");
         return VOS_ERR;
     }
 
@@ -236,17 +228,17 @@ int sg_mqtt_msg_publish(char* msg_send, char* pub_topic)
 
     mqtt_ret = MQTTClient_publishMessage(g_client, pub_topic, &pubmsg, &token);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-        SGDEV_WARN(SYSLOG_LOG, EG_MODULE, "mqtt publish failed(ret = %d,pub_topic = %s,msg = %s ,len = %d)).\n",
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt publish failed(ret = %d,pub_topic = %s,msg = %s ,len = %d)).\n",
             mqtt_ret, pub_topic, (char *)pubmsg.payload, pubmsg.payloadlen);
         return VOS_ERR;
     }
 
     mqtt_ret = MQTTClient_waitForCompletion(g_client, token, TIMEOUT);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "MQTTClient_waitForCompletion ret = %d).\n", mqtt_ret);
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "MQTTClient_waitForCompletion ret = %d).\n", mqtt_ret);
         rc = VOS_ERR;
     }
-    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "Message with delivery token %d delivered.\n", token);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "Message with delivery token %d delivered.\n", token);
     return rc;
 }
 
@@ -255,21 +247,21 @@ int sg_mqtt_msg_subscribe(char* topic, int qos)
     int mqtt_ret;
     int ret = VOS_OK;
     if (topic == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt subscribe topic invalid.\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe topic invalid.\n");
         return VOS_ERR;
     }
 
     if (g_client == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "mqtt subscribe client id handle invalid).\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe client id handle invalid).\n");
         return VOS_ERR;
     }
 
     mqtt_ret = MQTTClient_subscribe(g_client, topic, qos);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-        SGDEV_WARN(SYSLOG_LOG, EG_MODULE, "mqtt subscribe failed(ret = %d,pub_topic = %s)).\n",mqtt_ret, pub_topic);
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe failed(ret = %d,pub_topic = %s)).\n",mqtt_ret, pub_topic);
         return VOS_ERR;
     }
-    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "mqtt subscribe succeed(pub_topic = %s)).\n", pub_topic);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe succeed(pub_topic = %s)).\n", pub_topic);
     return ret;
 }
 
@@ -291,7 +283,7 @@ int sg_mqtt_init(void)
     SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE,"mqtt connect url: %s\n", server_uri);
 
     if (sg_agent_mqtt_init() != VOS_OK) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "sg_agent_mqtt_init failed.\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_agent_mqtt_init failed.\n");
         return VOS_ERR;
     }
 

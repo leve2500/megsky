@@ -29,7 +29,7 @@ extern "C" {  // only need to export C interface if used by C++ source code
 #define SGDEV_INFO(type, module, fmt, arg...)   ssp_syslog(LOG_INFO, type, module, fmt, ##arg)
 #define SGDEV_DEBUG(type, module, fmt, arg...)  ssp_syslog(LOG_DEBUG, type, module, fmt, ##arg)
 
-//ÑùÀý SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "test ssp syslog.");
+//ÑùÀý SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "test ssp syslog.");
 
 void sg_log_init(void);
 void sg_log_close(void);

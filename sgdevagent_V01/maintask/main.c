@@ -10,7 +10,8 @@
 #include "vrp.h"
 #include "vrp_task.h"
 #include "vos_typdef.h"
-
+#include "vos_errno.h"
+#include "ssp_mid.h"
 #include "sgdev_debug.h"
 #include "sgdev_param.h"
 #include "sgdev_struct.h"
@@ -50,7 +51,7 @@ void sgdevagent_ignore_sig(int signum)
 
 void sgdevagent_sighandler(int signo)
 {
-    SGDEV_NOTICE(SYSLOG_LOG, EG_MODULE, "sgdevagent receive sigo:%d",signo);
+    SGDEV_NOTICE(SYSLOG_LOG, SGDEV_MODULE, "sgdevagent receive sigo:%d",signo);
     switch (signo)
     {
     case SIGQUIT:
@@ -73,7 +74,7 @@ void sg_handle_signal(void)
     struct sigaction action;
 
     (void)sigemptyset(&action.sa_mask);
-    action.sa_flags = (int)(SA_NODEFER | SA_ONESHOT | SG_SIGINFO);
+    action.sa_flags = (int)(SA_NODEFER | SA_ONESHOT | SA_SIGINFO);
     action.sa_handler = sgdevagent_sighandler;
 
     (void)sigaction(SIGINT, &action, NULL);          // 2 中断进程
@@ -253,30 +254,30 @@ int main(int argc, char *argv[])
     pthread_cond_t main_cond = PTHREAD_COND_INITIALIZER;
     pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
 
-    (void)signal(SIGPIPEN);
-    (void)signal(SIGRTMIN + 4, SIG_IGN);
+    (void)sgdevagent_ignore_sig(SIGPIPE);
+    (void)sgdevagent_ignore_sig(SIGRTMIN + 4, SIG_IGN);
 
     sg_log_init();      // 日志初始化
 
     ret = (int)SSP_Init();
     if(ret != VOS_OK) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "SSP_Init failed ret:%d",ret);
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "SSP_Init failed ret:%d",ret);
         goto main_error;
     }
 
     //读参数文件
     if (read_param_file() != VOS_OK) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "read_param_file failed");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read_param_file failed");
         goto main_error;
     }
 
     //读周期参数
     if (read_period_file() != VOS_OK) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "read_period_file failed");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read_period_file failed");
         goto main_error;
     } 
     if (sg_init() != VOS_OK) {
-        SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "sg_init failed");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_init failed");
         goto main_error;
     }
 
@@ -293,16 +294,16 @@ int main(int argc, char *argv[])
         ret = sg_sockket_exit();
     } else {
         if (sg_mqtt_init() != VOS_OK) {
-            SGDEV_ERROR(SYSLOG_LOG, EG_MODULE, "sg_mqtt_init failed");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_mqtt_init failed");
             goto main_error;
         }
         for (;;) {
-            if (sg_get_mqtt_connect_flag() != V0S_OK) {
+            if (sg_get_mqtt_connect_flag() != DEVICE_ONLINE) {
                 if (sg_agent_mqtt_connect() != VOS_OK) {
                     continue;
                 }            
                 if (sg_create_sub_topic() != VOS_OK) {
-                    SGDEV_INFO(SYSLOG_LOG, EG_MODULE, "mqtt connect subscribe failed.\n");
+                    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect subscribe failed.\n");
                     goto main_error;
                 }
             }

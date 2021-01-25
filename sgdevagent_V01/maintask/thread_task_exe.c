@@ -562,7 +562,7 @@ int sg_task_execution_container_thread(void)
     VOS_UINTPTR msg[VOS_QUEUE_MSG_NUM] = { 0 };
     char* param = NULL;
     for (; ;) {
-        if (!sg_get_mqtt_connect_flag()) {
+        if (sg_get_mqtt_connect_flag() == DEVICE_OFFLINE) {
             VOS_T_Delay(1000 * 10);
             continue;
         }
@@ -601,7 +601,7 @@ int sg_task_execution_app_thread(void)
     VOS_UINTPTR msg[VOS_QUEUE_MSG_NUM] = { 0 };
     char* param = NULL;
     for (; ;) {
-        if (!sg_get_mqtt_connect_flag()) {
+        if (sg_get_mqtt_connect_flag() == DEVICE_OFFLINE) {
             VOS_T_Delay(1000 * 10);
             continue;
         }

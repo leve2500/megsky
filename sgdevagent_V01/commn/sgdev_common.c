@@ -12,19 +12,18 @@
 #include "sgdev_struct.h"
 
 
-static char* sg_strncpy(char *io_pDst, const char *i_pSrc, int i_nLen)
+static char* sg_strncpy(char *io_pdst, const char *i_psrc, int i_nlen)
 {
-    if (NULL != io_pDst) {
-        if (NULL != i_pSrc && i_nLen >= 0) {
-            strncpy(io_pDst, i_pSrc, i_nLen);
-            io_pDst[i_nLen] = '\0';
-        } else
-        {
-            io_pDst[0] = '\0';
+    if (NULL != io_pdst) {
+        if (NULL != i_psrc && i_nlen >= 0) {
+            strncpy(io_pdst, i_psrc, i_nlen);
+            io_pdst[i_nlen] = '\0';
+        } else {
+            io_pdst[0] = '\0';
         }
     }
 
-    return io_pDst;
+    return io_pdst;
 }
 
 // 统计无符号长整数二进制表示中1的个数
@@ -39,115 +38,115 @@ unsigned long long sg_hamming_weight(unsigned long long number)
 
     return count_;
 }
-//从Index处开始搜索第num次出现字符串i_pStr的位置
-int sg_find(char *m_pBuf, int m_nLen, const char *i_pStr, int i_nNum, int i_nIndex)
+//从Index处开始搜索第num次出现字符串i_pstr的位置
+int sg_find(char *m_pbuf, int m_nlen, const char *i_pstr, int i_nnum, int i_nindex)
 {
-    if (i_pStr == NULL)
+    if (i_pstr == NULL)
         return -1;
 
     char *pos = NULL, *oldPos = NULL;
 
-    if (i_nIndex > m_nLen - 1 || i_nIndex < 0)
+    if (i_nindex > m_nlen - 1 || i_nindex < 0)
         return -1;
 
-    oldPos = m_pBuf + i_nIndex;
+    oldPos = m_pbuf + i_nindex;
 
-    for (int i = 0; i < i_nNum; ++i)
+    for (int i = 0; i < i_nnum; ++i)
     {
-        pos = strstr(oldPos, i_pStr);
+        pos = strstr(oldPos, i_pstr);
 
         if (pos == NULL)
             return -2;
 
-        oldPos = pos + strlen(i_pStr);
+        oldPos = pos + strlen(i_pstr);
     }
 
-    return (int)(pos - m_pBuf);
+    return (int)(pos - m_pbuf);
 }
 
-//从字符串左开始向左取i_nLen长度的字符串
- //输入参数  : char *pData  : 要搜索数据的首地址
- //m_nLen ：输入长度
- //dData ：输出指针
- //i_nLen ：截取个数
-int sg_str_left(char *pData, int m_nLen, char *dData, int i_nLen)
+//从字符串左开始向左取i_nlen长度的字符串
+ //输入参数  : char *p_data  : 要搜索数据的首地址
+ //m_nlen ：输入长度
+ //d_data ：输出指针
+ //i_nlen ：截取个数
+int sg_str_left(char *p_data, int m_nlen, char *d_data, int i_nlen)
 {
     int t_nLen = 0;
-    if (dData == NULL)
+    if (d_data == NULL)
         return 0;
 
-    if (i_nLen <= 0 || m_nLen <= 0)
+    if (i_nlen <= 0 || m_nlen <= 0)
         return 0;
-    else if (i_nLen > m_nLen)
-        t_nLen = m_nLen;
+    else if (i_nlen > m_nlen)
+        t_nLen = m_nlen;
     else
-        t_nLen = i_nLen;
+        t_nLen = i_nlen;
 
-    sg_strncpy(dData, pData, t_nLen);
+    sg_strncpy(d_data, p_data, t_nLen);
 
     return t_nLen;
 }
-//输入参数  : char *pData  : 要搜索数据的首地址
-//m_nLen ：输入长度
-//dData ：输出指针
-//i_nLen ：截取个数
-//i_nIndex 从第几位开始
+//输入参数  : char *p_data  : 要搜索数据的首地址
+//m_nlen ：输入长度
+//d_data ：输出指针
+//i_nlen ：截取个数
+//i_nindex 从第几位开始
 
-int sg_str_mid(char *pData, int m_nLen, int i_nIndex, char *dData, int i_nLen)
+int sg_str_mid(char *p_data, int m_nlen, int i_nindex, char *d_data, int i_nlen)
 {
     int t_nLen = 0;
-    if (dData == NULL)
+    if (d_data == NULL)
         return 0;
-    // i_nLen 负数表示取后面所有字符
-    if (i_nIndex < 0 || i_nIndex >= m_nLen || m_nLen <= 0)
+    // i_nlen 负数表示取后面所有字符
+    if (i_nindex < 0 || i_nindex >= m_nlen || m_nlen <= 0)
         return 0;
-    else if (i_nLen > m_nLen - i_nIndex || i_nLen < 0)
-        t_nLen = m_nLen - i_nIndex;
+    else if (i_nlen > m_nlen - i_nindex || i_nlen < 0)
+        t_nLen = m_nlen - i_nindex;
     else
-        t_nLen = i_nLen;
+        t_nLen = i_nlen;
 
-    sg_strncpy(dData, pData + i_nIndex, t_nLen);
+    sg_strncpy(d_data, p_data + i_nindex, t_nLen);
     return t_nLen;
 }
-//输入参数  : char *pData  : 要搜索数据的首地址
-//m_nLen ：输入长度
-//dData ：输出指针
-//i_nLen ：截取个数
-//i_nIndex 从第几位开始
-//从字符串右开始向左取i_nLen长度的字符串
-int sg_str_right(char *pData, int m_nLen, char *dData, int i_nLen)
+//输入参数  : char *p_data  : 要搜索数据的首地址
+//m_nlen ：输入长度
+//d_data ：输出指针
+//i_nlen ：截取个数
+//i_nindex 从第几位开始
+//从字符串右开始向左取i_nlen长度的字符串
+int sg_str_right(char *p_data, int m_nlen, char *d_data, int i_nlen)
 {
-    if (dData == NULL)
+    if (d_data == NULL)
         return 0;
     int t_nLen = 0;
 
-    if (i_nLen <= 0 || m_nLen <= 0)
+    if (i_nlen <= 0 || m_nlen <= 0)
         return 0;
-    else if (i_nLen > m_nLen)
-        t_nLen = m_nLen;
+    else if (i_nlen > m_nlen)
+        t_nLen = m_nlen;
     else
-        t_nLen = i_nLen;
+        t_nLen = i_nlen;
 
-    sg_strncpy(dData, pData + m_nLen - t_nLen, t_nLen);
+    sg_strncpy(d_data, p_data + m_nlen - t_nLen, t_nLen);
 
     return t_nLen;
 }
-int sg_str_colon(char *pData, int m_nLen, char *ldDatal, char *rdData)
+int sg_str_colon(char *p_data, int m_nlen, char *ld_datal, char *rd_data)
 {
     int pos = 0;
-    if (ldDatal == NULL || rdData == NULL) {
+    if (ld_datal == NULL || rd_data == NULL) {
         return VOS_ERR;
     }
-    pos = sg_find(pData, m_nLen, ":", 1, 0);
+    pos = sg_find(p_data, m_nlen, ":", 1, 0);
     if (pos > 0) {
-        if (sg_str_left(pData, m_nLen, ldDatal, pos) <= 0) {
+        if (sg_str_left(p_data, m_nlen, ld_datal, pos) <= 0) {
             return VOS_ERR;
         }
-        if (sg_str_right(pData, m_nLen, rdData, m_nLen - pos - 1) <= 0) {
+        if (sg_str_right(p_data, m_nlen, rd_data, m_nlen - pos - 1) <= 0) {
             return VOS_ERR;
         }
     } else {
-        sg_strncpy(ldDatal, pData, m_nLen);
+        sg_strncpy(ld_datal, p_data, m_nlen);
     }
 
     return VOS_OK;
@@ -155,70 +154,70 @@ int sg_str_colon(char *pData, int m_nLen, char *ldDatal, char *rdData)
 /*****************************************************************************
  函 数 名  : MQTT_SkipKey
  功能描述  : 跳过要搜索的关键字字符串
- 输入参数  : char *pData  : 要搜索数据的首地址
-             char *pKey   : 关键字字符串
+ 输入参数  : char *p_data  : 要搜索数据的首地址
+             char *p_key   : 关键字字符串
  输出参数  : 无
  返 回 值  : char * : 越过关键字以后的地址指针。如果没有找到关键字，返回NULL
  调用函数  :
  被调函数  :
 *****************************************************************************/
-static char *sg_skip_key(char *pData, char *pKey)
+static char *sg_skip_key(char *p_data, char *p_key)
 {
-    char *pKeyData = NULL;
+    char *pkey_data = NULL;
 
-    if ((NULL == pData) || (NULL == pKey))
+    if ((NULL == p_data) || (NULL == p_key))
     {
         return NULL;
     }
 
-    pKeyData = (char *)strstr(pData, pKey);
+    pkey_data = (char *)strstr(p_data, p_key);
 
-    if (NULL != pKeyData)
+    if (NULL != pkey_data)
     {
-        pKeyData += strlen(pKey);
+        pkey_data += strlen(p_key);
     }
 
-    return pKeyData;
+    return pkey_data;
 }
 
 /*****************************************************************************
  函 数 名  : Mqtt_Response_Copy
  功能描述  : 接收数据拷贝函数
- 输入参数  : char *pData    : 数据首地址
-            char *pKey     : 关键字指针
-            char *pEnd     : 结束关键字指针
-            char *pOutBuf  : 输出缓冲区
+ 输入参数  : char *p_data    : 数据首地址
+            char *p_key     : 关键字指针
+            char *p_end     : 结束关键字指针
+            char *p_ou_buf  : 输出缓冲区
  输出参数  : 无
  返 回 值  : UINT32 : 处理的数据长度
  调用函数  :
  被调函数  :
 *****************************************************************************/
 
-static uint32_t sg_str_copy_sd(char *pData, char *pKey, char *pEnd, char *pOutBuf, uint32_t ulLength)
+static uint32_t sg_str_copy_sd(char *p_data, char *p_key, char *p_end, char *p_ou_buf, uint32_t ul_length)
 {
     uint32_t u32CpLen = 0;
     uint32_t u32RdLen = 0;
-    char   *pKeyData = NULL;
+    char   *pkey_data = NULL;
     char   *pEndData = NULL;
-    if ((NULL == pData)
-        || (NULL == pKey)
-        || (NULL == pOutBuf)
-        // || (NULL == pEnd)
-        || (0 == ulLength))
+    if ((NULL == p_data)
+        || (NULL == p_key)
+        || (NULL == p_ou_buf)
+        // || (NULL == p_end)
+        || (0 == ul_length))
     {
         return 0;
     }
-    pKeyData = sg_skip_key(pData, pKey);
-    if (NULL != pKeyData)
+    pkey_data = sg_skip_key(p_data, p_key);
+    if (NULL != pkey_data)
     {
-        pEndData = (char *)strstr(pKeyData, pEnd);
+        pEndData = (char *)strstr(pkey_data, p_end);
 
         if (NULL != pEndData)
         {
-            u32CpLen = (uint32_t)(pEndData - pKeyData);
-            memcpy(pOutBuf, pKeyData, u32CpLen);
-            pOutBuf[u32CpLen] = 0;
-            u32RdLen = (uint32_t)(pEndData - pData);
+            u32CpLen = (uint32_t)(pEndData - pkey_data);
+            memcpy(p_ou_buf, pkey_data, u32CpLen);
+            p_ou_buf[u32CpLen] = 0;
+            u32RdLen = (uint32_t)(pEndData - p_data);
         }
     }
     return u32RdLen;

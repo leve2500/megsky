@@ -255,7 +255,7 @@ int main(int argc, char *argv[])
     pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
 
     (void)sgdevagent_ignore_sig(SIGPIPE);
-    (void)sgdevagent_ignore_sig(SIGRTMIN + 4, SIG_IGN);
+    (void)sgdevagent_ignore_sig(SIGRTMIN + 4);
 
     sg_log_init();      // 日志初始化
 

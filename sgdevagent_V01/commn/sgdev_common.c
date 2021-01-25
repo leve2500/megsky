@@ -7,6 +7,7 @@
 
 #include "vos_typdef.h"
 #include "vos_errno.h"
+#include "vos_mem.h"
 #include "ssp_mid.h"
 #include "sgdev_struct.h"
 

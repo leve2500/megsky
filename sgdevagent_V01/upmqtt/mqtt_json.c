@@ -7,6 +7,7 @@
 #include "vrp_mem.h"
 #include "vrp_event.h"
 
+#include "sgdev_struct.h"
 #include "sgdev_param.h"
 
 #include "mqtt_json.h"

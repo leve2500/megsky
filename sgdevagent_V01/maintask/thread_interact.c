@@ -17,6 +17,7 @@
 #include "mqtt_dev.h"
 #include "mqtt_app.h"
 #include "mqtt_container.h"
+#include "mqtt_json.h"
 
 #include "timer_pack.h"
 #include "thread_dev_insert.h"

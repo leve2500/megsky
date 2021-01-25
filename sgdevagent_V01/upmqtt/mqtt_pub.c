@@ -43,7 +43,7 @@ volatile MQTTClient_deliveryToken g_deliveredtoken;
 MQTTClient_connectOptions g_conn_opts = MQTTClient_connectOptions_initializer;
 
 void sg_connLost(void *context, char *cause);
-int sg_mqtt_msg_arrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message);
+int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_message *message)
 void sg_delivered(void *context, MQTTClient_deliveryToken dt);
 void sg_agent_mqtt_disconnect(void);
 void sg_agent_mqtt_destroy(void);
@@ -64,36 +64,48 @@ void sg_connLost(void *context, char *cause)
 }
 
 
-int sg_mqtt_msg_arrvd(void *context, char *topicName, int topicLen, MQTTClient_message *message)
+int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_message *message)
 {
     int ret = VOS_OK;
+    int err;
+    int size;
     char *payloadptr = NULL;
-    payloadptr = (char*)message->payload;
-
-    printf("ceshi*************\n<topic>: %s.**********\n", topicName);
-    printf("ceshi*************\n<payloadptr> == %s.**********\n", payloadptr);
-
     mqtt_data_info_s *item = NULL;
-    item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
-    if (item == NULL) {
-        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt arrvd malloc item failed.\n");
+    printf("ceshi*************\n<topic>: %s.**********\n", topicName);
+    if(message == NULL) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "arrived message error.\n");   
+        MQTTClient_free(topic);
         return VOS_ERR;
     }
 
-    (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    memcpy_s(item->msg_send, MSG_ARRVD_MAX_LEN, payloadptr, message->payloadlen);
-    sprintf(item->pubtopic, "%s", topicName);
+    if(message->payloadlen >= 0) {
+        payloadptr = malloc((size_t)(message->payloadlen + 1));
+        if(payloadptr != NULL) {
+            printf("ceshi*************\n<payloadptr> == %s.**********\n", payloadptr);
+            (void)memcpy_s(payloadptr,(size_t)(message->payloadlen + 1),message->payload,(size_t)(message->payloadlen + 1))       
+            payloadptr[message->payloadlen] = 0;
 
-    if (item->msg_send == NULL || item->pubtopic == NULL) {
-        (void)VOS_Free(item);
-        item = NULL;
-        return VOS_ERR;
+            item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
+            if (item == NULL) {
+                SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt arrvd malloc item failed.\n");
+                MQTTClient_freeMessage(&message);
+                MQTTClient_free(topic);
+                return VOS_ERR;
+            }
+            (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
+            (void)memcpy_s(item->msg_send, MSG_ARRVD_MAX_LEN, payloadptr, message->payloadlen);
+            size = sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE,"%s", topic);
+            if(size < 0) {
+                (void)VOS_Free(item);
+                MQTTClient_freeMessage(&message);
+                MQTTClient_free(topic);
+                return VOS_ERR;
+            }
+            sg_push_unpack_item(item);          //入列
+        }
     }
-
-    sg_push_unpack_item(item);          //入列
     MQTTClient_freeMessage(&message);
-    MQTTClient_free(topicName);
-
+    MQTTClient_free(topic);
     return ret;
 }
 
@@ -164,7 +176,7 @@ int sg_agent_mqtt_connect(void)
     }
 
     SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt connecting ....\n");
-    mqtt_ret = MQTTClient_connect(g_client, &g_conn_opts));
+    mqtt_ret = MQTTClient_connect(g_client, &g_conn_opts);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
         SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect failed(ret = %d)).\n", mqtt_ret);
         // 0成功
@@ -258,10 +270,10 @@ int sg_mqtt_msg_subscribe(char* topic, int qos)
 
     mqtt_ret = MQTTClient_subscribe(g_client, topic, qos);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
-        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe failed(ret = %d,pub_topic = %s)).\n",mqtt_ret, pub_topic);
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe failed(ret = %d,pub_topic = %s)).\n",mqtt_ret, topic);
         return VOS_ERR;
     }
-    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe succeed(pub_topic = %s)).\n", pub_topic);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt subscribe succeed(pub_topic = %s)).\n", topic);
     return ret;
 }
 
@@ -282,13 +294,13 @@ int sg_mqtt_init(void)
     sprintf_s(server_uri, DATA_BUF_F256_SIZE, "tcp://%s:%u", g_ip, g_port);
     SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE,"mqtt connect url: %s\n", server_uri);
 
-    if (sg_agent_mqtt_init() != VOS_OK) {
+    if (sg_agent_mqtt_init(server_uri,g_clientid) != VOS_OK) {
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_agent_mqtt_init failed.\n");
         return VOS_ERR;
     }
 
     if (sg_agent_mqtt_connect() == VOS_OK) {    // 初始化成功后尝试一次连接
-        if (sg_create_sub_topic == VOS_OK) {
+        if (sg_create_sub_topic() == VOS_OK) {
             sg_set_mqtt_connect_flag(DEVICE_ONLINE);
         }
     }
@@ -297,7 +309,7 @@ int sg_mqtt_init(void)
 
 void sg_mqtt_exit(void)
 {
-    g_connect_flag = DEVICE_OFFLINE;
+    g_mqtt_connect_flag.mqtt_connect_flag = DEVICE_OFFLINE;
     sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
     sg_destroy_sub_topic();
     (void)sg_agent_mqtt_disconnect();
@@ -323,7 +335,6 @@ int sg_create_sub_topic(void)
     sprintf(g_app_data_pub, "/%s/%s/app/data", g_ver, g_devid); 				    // 用于对平台发送的应用状态
 
     sprintf(g_top_data_sub_dev_com, "/%s/%s/device/command", g_ver, g_devid);       // 用于平台向终端发送设备控制命令，如设备升级、控制设备等
-    sg_destroy_sub_topic();
 
     if (sg_mqtt_msg_subscribe(g_top_data_sub_dev_com, QOS) != VOS_OK) {
         ret = VOS_ERR;

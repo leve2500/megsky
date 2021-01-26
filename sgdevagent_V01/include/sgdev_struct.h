@@ -375,7 +375,7 @@ typedef struct app_cfgs_info {
 /* 4. (3)应用配置查询应答 */
 typedef struct app_conf_reply {
     char                container[DATA_BUF_F64_SIZE];  // 容器名字
-    app_cfgs_info_s     appCfgs[DATA_BUF_F16_SIZE];    // 应用配置参数   翟工说定义的太大，这块最多不超过10个
+    app_cfgs_info_s     *appCfgs;                      // 应用配置参数
     uint16_t            app_num;
 }app_conf_reply_s;
 

@@ -64,7 +64,7 @@ int sg_handle_container_stop_cmd(int32_t mid, char *container_name);
 int sg_handle_container_delete_cmd(int32_t mid, char *container_name);
 
 //容器配置修改
-void sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj);
+int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj);
 
 //容器配置查询应答
 int sg_handle_container_param_get(int32_t mid);
@@ -76,7 +76,7 @@ int sg_handle_container_status_get(char *type, int32_t mid);
 void sg_handle_container_upgrade_cmd(int32_t mid, container_upgrade_cmd_s cmdobj);
 
 //容器日志召回
-void sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s cmdobj);
+int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmdobj);
 
 
 /*========================APP管理================================== */
@@ -88,19 +88,19 @@ void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmdobj);
 int sg_handle_app_start_cmd(int32_t mid, app_control_cmd_s *cmdobj);
 
 //应用停止
-void sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmdobj);
 
 //应用卸载
-void sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj);
 
 //应用使能
-void sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj);
 
 //应用去使能
-void sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj);
 
 //应用配置修改
-void sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s cmdobj);
+int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmdobj);
 
 //应用配置状态查询命令
 void sg_handle_app_param_get(int32_t mid, char *container_name);

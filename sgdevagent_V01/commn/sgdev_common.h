@@ -10,7 +10,7 @@
 extern "C" {  // only need to export C interface if used by C++ source code
 #endif
 
-unsigned long long sg_hamming_weight(unsigned long long number);    //统计无符号长整数二进制表示中1的个数
+int sg_hamming_weight(unsigned long long number);    //统计无符号长整数二进制表示中1的个数
 int sg_find(char *m_pbuf, int m_nlen, const char *i_pstr, int i_nnum, int i_nindex);
 int sg_str_left(char *p_data, int m_nlen, char *d_data, int i_nlen);
 int sg_str_mid(char *p_data, int m_nlen, int i_nindex, char *d_data, int i_nlen);

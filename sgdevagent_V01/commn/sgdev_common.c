@@ -12,11 +12,17 @@
 #include "sgdev_struct.h"
 
 
+#define  STR_ERROR_NEG_TWO (-2)
+
 static char* sg_strncpy(char *io_pdst, const char *i_psrc, int i_nlen)
 {
+    int size;
     if (NULL != io_pdst) {
         if (NULL != i_psrc && i_nlen >= 0) {
-            strncpy(io_pdst, i_psrc, i_nlen);
+            size = strncpy_s(io_pdst, i_nlen, i_psrc, i_nlen);
+            if (size < 0) {
+                io_pdst[0] = '\0';
+            }            
             io_pdst[i_nlen] = '\0';
         } else {
             io_pdst[0] = '\0';
@@ -27,37 +33,38 @@ static char* sg_strncpy(char *io_pdst, const char *i_psrc, int i_nlen)
 }
 
 // 统计无符号长整数二进制表示中1的个数 Hamming_weight算法二---只考虑1的位数
-unsigned long long sg_hamming_weight(unsigned long long number)
+int sg_hamming_weight(unsigned long long number)
 {
     int count = 0;
-    while (number != 0) { 
+    while (number != 0) {
         number &= number - 1;
         count++;
     }
 
     return count;
 }
-//从Index处开始搜索第num次出现字符串i_pstr的位置
+// 从Index处开始搜索第num次出现字符串i_pstr的位置
 int sg_find(char *m_pbuf, int m_nlen, const char *i_pstr, int i_nnum, int i_nindex)
 {
     if (i_pstr == NULL)
         return -1;
 
-    char *pos = NULL, *oldPos = NULL;
+    char *pos = NULL, 
+    char *old_pos = NULL;
 
-    if (i_nindex > m_nlen - 1 || i_nindex < 0)
+    if (i_nindex > m_nlen - 1 || i_nindex < 0) {
         return -1;
+    }
 
-    oldPos = m_pbuf + i_nindex;
+    old_pos = m_pbuf + i_nindex;
 
-    for (int i = 0; i < i_nnum; ++i)
-    {
-        pos = strstr(oldPos, i_pstr);
+    for (int i = 0; i < i_nnum; ++i) {
+        pos = strstr(old_pos, i_pstr);
+        if (pos == NULL) {
+            return STR_ERROR_NEG_TWO;
+        }
 
-        if (pos == NULL)
-            return -2;
-
-        oldPos = pos + strlen(i_pstr);
+        old_pos = pos + strlen(i_pstr);
     }
 
     return (int)(pos - m_pbuf);
@@ -74,12 +81,13 @@ int sg_str_left(char *p_data, int m_nlen, char *d_data, int i_nlen)
     if (d_data == NULL)
         return 0;
 
-    if (i_nlen <= 0 || m_nlen <= 0)
+    if (i_nlen <= 0 || m_nlen <= 0) {
         return 0;
-    else if (i_nlen > m_nlen)
+    } else if (i_nlen > m_nlen) {
         t_nLen = m_nlen;
-    else
+    } else {
         t_nLen = i_nlen;
+    }
 
     sg_strncpy(d_data, p_data, t_nLen);
 

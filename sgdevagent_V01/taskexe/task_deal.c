@@ -768,12 +768,154 @@ int sg_handle_container_delete_cmd(int32_t mid, char *container_name)
     sg_push_pack_item(item);
     return VOS_OK;
 }
+/**
+ * sg_get_container_modify_mount
+ * 功能：获取mount函数
+ * 传入：container_conf_cmd_s *cmdobj
+ * 传出：container_mount_dir_add_s *mount_info
+ * 返回值：int
+ */
+static int sg_get_container_modify_mount(container_conf_cmd_s *cmdobj, container_mount_dir_add_s *mount_info)
+{
+    int ret                    = VOS_OK;
+    int i                      = 0;
+    char left_obj[DATA_BUF_F64_SIZE]  = { 0 };
+    char right_obj[DATA_BUF_F64_SIZE] = { 0 };
+    if (cmdobj->mount_len > 0) {                                                                                        // mount赋值
+        mount_info->num = cmdobj->mount_len;
+        mount_info->add_type = MOUNT_DIR_ADD_OVERWRITE;
+        mount_info->mount_dir = (mount_dir_cfg_s*)VOS_Malloc(MID_SGDEV, sizeof(mount_dir_cfg_s) * cmdobj->mount_len);   // 记得释放
+        if (mount_info->mount_dir == NULL) {
+            (void)printf("mount_info->mount_dir VOS_Malloc error!\n");
+            return VOS_ERR;
+        }
+        (void)memset_s(mount_info->mount_dir, sizeof(mount_dir_cfg_s) * cmdobj->mount_len, 0,
+                sizeof(mount_dir_cfg_s) * cmdobj->mount_len);
+        for (i = 0; i < cmdobj->mount_len; i++) {
+            if (sg_str_colon(cmdobj->mount[i], strlen(cmdobj->mount[i]), left_obj, right_obj) != VOS_OK) {
+                (void)printf("sg_str_colon error\n");
+                return VOS_ERR;
+            }
+            sprintf_s(mount_info->mount_dir[i].host_dir, VM_PATH_MAX_128, "%s", left_obj);
+            sprintf_s(mount_info->mount_dir[i].container_dir, VM_PATH_MAX_128, "%s", right_obj);
+            printf("mount_info->mount_dir[%d].host_dir                  = %s\n", i, mount_info->mount_dir[i].host_dir);
+            printf("mount_info->mount_dir[%d].container_dir             = %s\n", i, mount_info->mount_dir[i].container_dir);
+        }
+    }
+    return ret;
+}
+/**
+ * sg_get_container_modify_dev
+ * 功能：获取dev函数
+ * 传入：container_conf_cmd_s *cmdobj
+ * 传出：install_map_dev *dev_info
+ * 返回值：int
+ */
+static int sg_get_container_modify_dev(container_conf_cmd_s *cmdobj, install_map_dev *dev_info)
+{
+    int ret                    = VOS_OK;
+    int i                      = 0;
+    char left_obj[DATA_BUF_F64_SIZE]  = { 0 };
+    char right_obj[DATA_BUF_F64_SIZE] = { 0 };
+    if (cmdobj->dev_len > 0) {                                                                                          // dev赋值
+        dev_info->dev_num = cmdobj->dev_len;
+        dev_info->dev_list = (install_dev_node*)VOS_Malloc(MID_SGDEV, 
+                sizeof(install_dev_node) * cmdobj->dev_len);                                                            // 记得释放
+        if (dev_info->dev_list == NULL) {
+            (void)printf("dev_info->dev_list VOS_Malloc error!\n");
+            return VOS_ERR;
+        }
+        (void)memset_s(dev_info->dev_list, sizeof(install_dev_node) * cmdobj->dev_len, 0,
+                 sizeof(install_dev_node) * cmdobj->dev_len);
+        for (i = 0; i < cmdobj->dev_len; i++) {
+            if (sg_str_colon(cmdobj->dev[i], strlen(cmdobj->dev[i]), left_obj, right_obj) != VOS_OK) {
+                (void)printf("sg_str_colon error\n");
+                return VOS_ERR;
+            }
+            sprintf_s(dev_info->dev_list[i].host_dev, CONTAINER_DEV_NAME_MAX_LEN, "%s", left_obj);
+            sprintf_s(dev_info->dev_list[i].map_dev, CONTAINER_DEV_NAME_MAX_LEN, "%s", right_obj);
+            printf("dev_info->dev_list[%d].host_dev                     = %s\n", i, dev_info->dev_list[i].host_dev);
+            printf("dev_info->dev_list[%d].map_dev                      = %s\n", i, dev_info->dev_list[i].map_dev);
+        }
+    }
+    return ret;
+}
+
+// 容器配置修改处理函数
+static int sg_container_modify_north(container_conf_cmd_s *cmdobj) 
+{
+    int ret                                  = VOS_OK;
+    int cpus                                 = 0;
+    int i                                    = 0;
+    int container_len                        = 0;
+    char left_obj[DATA_BUF_F64_SIZE]                = { 0 };
+    char right_obj[DATA_BUF_F64_SIZE]               = { 0 };
+    char errRet[VM_RET_STRING_SIZE]          = { 0 };
+    INSTALL_OVA_PARA_NORTH_SG_S install_info = { 0 };
+
+    container_len = strlen(cmdobj->container) + 1;
+    (void)printf("container_len = %d\n", container_len);
+    install_info.container_name = (char*)VOS_Malloc(MID_SGDEV, sizeof(char) * container_len);
+    if (install_info.container_name == NULL) {
+        (void)printf("install_info.container_name = NULL\n");
+        return VOS_ERR;
+    }
+    (void)memset_s(install_info.container_name, sizeof(char) * container_len, 0, sizeof(char) * container_len);
+    memcpy_s(install_info.container_name, sizeof(char) * container_len, cmdobj->container, strlen(cmdobj->container));  // 容器名称赋值
+    cpus = cmdobj->cfgCpu.cpus;
+    install_info.cpu_mask = 0;
+    for (i = 0; i < cpus; i++) {
+        install_info.cpu_mask |= i;                                                                                     // cpu核数赋值
+    }
+    install_info.cpu_threshold = cmdobj->cfgCpu.cpuLmt;                                                                 // cpu监控阈值赋值
+    install_info.mem_size = cmdobj->cfgMem.memory;                                                                      // 内存限值赋值
+    install_info.mem_threshold = cmdobj->cfgMem.memLmt;                                                                 // 内存监控阈值赋值
+    install_info.disk_size = cmdobj->cfgDisk.disk;                                                                      // 存储限值赋值
+    install_info.disk_threshold = cmdobj->cfgDisk.diskLmt;                                                              // 磁盘存储监控阈值赋值
+
+    if (strlen(cmdobj->port) != 0) {                                                                                    // port赋值
+        if (sg_str_colon(cmdobj->port, strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
+            (void)printf("sg_str_colon error\n");
+            return VOS_ERR;
+        }
+        install_info.port_map.port_node[0].host_port = atoi(left_obj);
+        install_info.port_map.port_node[0].container_port = atoi(right_obj);
+    }
+    printf("install_info.container_name                             = %s\n", install_info.container_name);
+    printf("install_info.cpu_mask                                   = %lld\n", install_info.cpu_mask);
+    printf("install_info.cpu_threshold                              = %d\n", install_info.cpu_threshold);
+    printf("install_info.mem_size                                   = %d\n", install_info.mem_size);
+    printf("install_info.mem_threshold                              = %d\n", install_info.mem_threshold);
+    printf("install_info.disk_size                                  = %d\n", install_info.mem_size);
+    printf("install_info.disk_threshold                             = %d\n", install_info.mem_size);
+    printf("install_info.port_map.port_node[0].host_port            = %d\n", install_info.port_map.port_node[0].host_port);
+    printf("install_info.port_map.port_node[0].container_port       = %d\n", install_info.port_map.port_node[0].container_port);
+
+    if (sg_get_container_modify_mount(cmdobj, &install_info.mount_dir_add) != VOS_OK) {                                 //获取mount
+        (void)printf("sg_get_container_modify_mount error!\n");
+        ret = VOS_ERR;
+    }
+    if (sg_get_container_modify_dev(cmdobj, &install_info.dev_map) != VOS_OK) {                                         //获取dev
+        (void)printf("sg_get_container_modify_dev error!\n");
+        ret = VOS_ERR;
+    }
+    if (!vm_rpc_container_modify_north_sg(&install_info, errRet, VM_RET_STRING_SIZE)) {
+        printf("vm_rpc_container_modify_north_sg error!\n");
+        ret = VOS_ERR;
+    }
+    (void)VOS_Free(install_info.mount_dir_add.mount_dir);
+    install_info.mount_dir_add.mount_dir = NULL;
+    (void)VOS_Free(install_info.dev_map.dev_list);
+    install_info.dev_map.dev_list = NULL;
+    (void)VOS_Free(install_info.container_name);
+    install_info.container_name = NULL;
+    return ret;
+}
 
 //容器配置修改
-void sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj)   //cmdobj为传入
+int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj)   //cmdobj为传入
 {
-    gboolean ret = 0;
-    INSTALL_OVA_PARA_NORTH_S para = { 0 };
+    int ret = 0;
     mqtt_data_info_s *item = NULL;
     uint16_t code = REQUEST_SUCCESS;
     char container_name[1024];
@@ -783,33 +925,11 @@ void sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj
     //中间件执行
     //资源设置接口，不需要重启容器：
 
-
-    // para.north_type = MODE_MQTT;
-    // para.ova_name =  
-    // // para.uuid = 
-    // memcpy_s(para.container_name, MAX_CONTAINER_NAME_LEN, cmdobj->container, strlen(cmdobj->container));
-
-    // para.index = 
-    // para.disk_size = 
-    // para.mem_size = 
-    // para.cpu_mask = 
-    // para.dev_list = 
-    // para.container_type = 
-
-    ret = vm_rpc_container_modify_north(&para, errormsg, DATA_BUF_F256_SIZE);
-
-    // 阈值设置接口，不需要重启容器：
-    // vm_rpc_set_container_alarm_threshold(container_name, alarm_type,  unsigned int threshold_size, char *errRet, size_t errLen);   //2020.11.18编译  有报错先屏蔽  原因：可能没加相关头文件
-
-    // cmdobj.cfgCpu.cpus = 
-    // cmdobj.cfgCpu.cpuLmt = 
-    // cmdobj.cfgMem.memory = 
-    // cmdobj.cfgMem.memLmt = 
-    // cmdobj.cfgDisk.disk = 
-    // cmdobj.cfgDisk.diskLmt = 
-    // cmdobj.port = 
-    // cmdobj.mount[i] = 
-    // cmdobj.dev[i] = 
+    if (sg_container_modify_north(cmdobj) != VOS_OK) {
+        printf("vm_rpc_container_status error!\n");
+        code = REQUEST_FAILED;
+        ret = VOS_ERR;
+    }
 
     if (code != REQUEST_SUCCESS) {
         sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
@@ -819,78 +939,216 @@ void sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj
     sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
     sg_pack_container_param_set_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
+    return ret;
+}
+
+// 将无符号长整形转为cpu核数  需要确认
+static void sg_container_cpumask_to_cpucore(char *cpucore, unsigned len, long long cpu_mask)
+{
+    int cpu_core_len = 0;
+    int i;
+
+    for(i = 0; i < 64; i++) {
+        if((unsigned long long)cpu_mask & 1) {
+            cpu_core_len += sprintf_s(&cpucore[cpu_core_len], len - (unsigned int)cpu_core_len, "%d", i);
+        }
+        cpu_mask = (unsigned long long)cpu_mask >> 1;
+    }
+    if(cpu_core_len > 0) {
+        cpucore[cpu_core_len -1] = 0;
+    }
+}
+// 获取port
+static int sg_get_port_map_info(container_conf_cmd_s *container_conf_cmd)
+{
+    int ret = VOS_OK;
+    int port_num = 0;
+    char errRet[VM_RET_STRING_SIZE]         = { 0 };
+    port_map_node *port_info                = NULL;
+
+    if(!vm_rpc_get_port_map_info(container_conf_cmd->container, &port_num, &port_info, errRet, VM_RET_STRING_SIZE)) {
+        printf("vm_rpc_get_port_map_info error!\n");
+        ret = VOS_ERR;
+    }
+    printf("port_num                                                       = %d\n", port_num);
+    if (port_num <= 0) {
+        printf("vm_rpc_get_port_map_info error!\n");
+    } else {
+        if(port_info == NULL) {
+            printf("port_info NULL\n");
+        } else {
+            sprintf_s(container_conf_cmd->port, DATA_BUF_F64_SIZE, "%d:%d", 
+                port_info[0].host_port, port_info[0].container_port);
+            printf("container_conf_cmd->port = %s\n", container_conf_cmd->port);
+        }
+    }
+    if (port_info) {
+        (void)VOS_Free(port_info);
+        port_info = NULL;
+    }
+    return ret;
+}
+
+// 获取目录映射信息
+static int sg_get_mount_dir(container_conf_cmd_s *container_conf_cmd)
+{
+    int i   = 0;
+    int ret = VOS_OK;
+    int mount_num = 0;
+    char errRet[VM_RET_STRING_SIZE]       = { 0 };
+    container_mount_dir_get_s *mount_info = NULL;
+
+    if(!vm_rpc_get_mount_dir(container_conf_cmd->container, &mount_num, &mount_info, errRet, VM_RET_STRING_SIZE)) {
+        printf("vm_rpc_get_mount_dir error!\n");
+        ret = VOS_ERR;
+    }
+    printf("mount_num                                                       = %d\n", mount_num);
+    container_conf_cmd->mount_len = mount_num;
+    if (mount_num <= 0) {
+        printf("vm_rpc_get_mount_dir error!\n");
+    } else {
+        if(mount_info == NULL) {
+            printf("mount_info NULL\n");
+        } else {
+            for (i = 0; i < mount_num; i++) {
+                sprintf_s(container_conf_cmd->mount[i], DATA_BUF_F64_SIZE, "%s:%s", mount_info[i].host_dir, mount_info[i].container_dir);
+                printf("container_conf_cmd->mount[%d]     = %s\n", i, container_conf_cmd->mount[i]);
+            }
+        }
+    }
+    if (mount_info) {
+        (void)VOS_Free(mount_info);
+        mount_info = NULL;
+    }
+    return ret;
+}
+
+//获取设备节点信息
+static int sg_get_container_device_list(container_conf_cmd_s *container_conf_cmd)
+{
+    int i   = 0;
+    int ret = VOS_OK;
+    int dev_num = 0;
+    char errRet[VM_RET_STRING_SIZE]   = { 0 };
+    container_dev_node *dev_info      = NULL;
+
+    if(!vm_status_call_get_container_device_list(container_conf_cmd->container, &dev_info, &dev_num, errRet, VM_RET_STRING_SIZE)) {
+        printf("vm_status_call_get_container_device_list error!\n");
+        ret = VOS_ERR;
+    }
+    printf("dev_num                                                       = %d\n", dev_num);
+    container_conf_cmd->dev_len = dev_num;
+    if (dev_num <= 0) {
+        printf("vm_status_call_get_container_device_list error!\n");
+    } else {
+        if(dev_info == NULL) {
+            printf("dev_info NULL\n");
+        } else {
+            for (i = 0; i < dev_num; i++) {
+                sprintf_s(container_conf_cmd->dev[i], DATA_BUF_F64_SIZE, "%s:%s", dev_info[i].host_dev, dev_info[i].map_dev);
+                printf("container_conf_cmd->dev[%d]     = %s\n", i, container_conf_cmd->dev[i]);
+            }
+        }
+    }
+    if (dev_info) {
+        (void)VOS_Free(dev_info);
+        dev_info = NULL;
+    }
+    return ret;
+}
+
+static int sg_container_status_to_reply(container_config_reply_s *contiainer_config_reply, int container_num, 
+        CONTAINER_INFO_S *container_list)
+{
+    int num           = 0;
+    int ret           = VOS_OK;
+    char cpucore[128] = { 0 };
+
+    contiainer_config_reply->contPara_len = container_num;
+    contiainer_config_reply->contPara = (container_conf_cmd_s *)VOS_Malloc(MID_SGDEV,
+            sizeof(container_conf_cmd_s) * container_num);
+    if (contiainer_config_reply->contPara == NULL) {
+        printf("malloc use failure\n");
+        ret = VOS_ERR;
+    }
+    (void)memset_s(contiainer_config_reply->contPara, sizeof(container_conf_cmd_s)  * container_num, 0,
+                                                         sizeof(container_conf_cmd_s) * container_num);
+    for (num = 0; num < container_num; num++) {
+        memcpy_s(contiainer_config_reply->contPara[num].container, DATA_BUF_F64_SIZE, container_list[num].container_name,
+                strlen(container_list[num].container_name));                                                            // 容器名称赋值
+        sg_container_cpumask_to_cpucore(cpucore, 128, (long long)container_list[num].cpu_mask);                         // 2021.1.23 新加测试
+        contiainer_config_reply->contPara[num].cfgCpu.cpus = sg_hamming_weight(container_list[num].cpu_mask);           // CPU核数赋值
+        contiainer_config_reply->contPara[num].cfgCpu.cpuLmt = container_list[num].cpu_threshold;                       // CPU监控阈值
+        contiainer_config_reply->contPara[num].cfgMem.memory = container_list[num].container_mem_size;                  // 内存限值赋值
+        contiainer_config_reply->contPara[num].cfgMem.memLmt = container_list[num].memory_threshold;                    // 内存监控阈值赋值
+        contiainer_config_reply->contPara[num].cfgDisk.disk = container_list[num].container_storage_size;               // 存储限值赋值
+        contiainer_config_reply->contPara[num].cfgDisk.diskLmt = container_list[num].storage_threshold;                 // 磁盘存储监控阈值，百分数
+
+        printf("contiainer_config_reply->contPara[%d].container        = %s\n", num, contiainer_config_reply->contPara[num].container);
+        printf("cpucore                                                = %s\n", cpucore);
+        printf("container_list[%d].cpu_mask                            = %lld\n", num, container_list[num].cpu_mask);
+        printf("contiainer_config_reply->contPara[%d].cfgCpu.cpus      = %d\n", num, contiainer_config_reply->contPara[num].cfgCpu.cpus);
+        printf("contiainer_config_reply->contPara[%d].cfgCpu.cpuLmt    = %d\n", num, contiainer_config_reply->contPara[num].cfgCpu.cpuLmt);
+        printf("contiainer_config_reply->contPara[%d].cfgMem.memory    = %d\n", num, contiainer_config_reply->contPara[num].cfgMem.memory);
+        printf("contiainer_config_reply->contPara[%d].cfgMem.memLmt    = %d\n", num, contiainer_config_reply->contPara[num].cfgMem.memLmt);
+        printf("contiainer_config_reply->contPara[%d].cfgDisk.disk     = %d\n", num, contiainer_config_reply->contPara[num].cfgDisk.disk);
+        printf("contiainer_config_reply->contPara[%d].cfgDisk.diskLmt  = %d\n", num, contiainer_config_reply->contPara[num].cfgDisk.diskLmt);
+
+        if (sg_get_port_map_info(&contiainer_config_reply->contPara[num]) != VOS_OK) {
+            printf("sg_get_port_map_info error!\n");
+            ret = VOS_ERR;
+        }
+
+        if (sg_get_mount_dir(&contiainer_config_reply->contPara[num]) != VOS_OK) {
+            printf("sg_get_mount_dir error!\n");
+            ret = VOS_ERR;
+        }
+
+        if (sg_get_container_device_list(&contiainer_config_reply->contPara[num]) != VOS_OK) {
+            printf("sg_get_container_device_list error!\n");
+            ret = VOS_ERR;
+        }
+    }
+    return ret;
 }
 
 //容器配置查询命令 
 int sg_handle_container_param_get(int32_t mid)
 {
     int ret = VOS_OK;
-    int num = 0;
-    bool result = true;
-    int container_cnt = 0;
+    int container_num = 0;
     mqtt_data_info_s *item = NULL;
     uint16_t code = REQUEST_SUCCESS;
-
-    CONTAINER_INFO_S *container_info = NULL;
+    CONTAINER_INFO_S *container_list = NULL;
     container_config_reply_s contiainer_config_reply = { 0 };
     char errmsg[SYSMAN_RPC_ERRMSG_MAX] = { 0 };
     char errormsg[DATA_BUF_F256_SIZE];
+    
+
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
-    result = vm_rpc_container_status(&container_info, &container_cnt, NULL, errmsg, SYSMAN_RPC_ERRMSG_MAX);
-    if (result != true) {
+    if (vm_rpc_container_status(&container_list, &container_num, NULL, errmsg, SYSMAN_RPC_ERRMSG_MAX) == false) {
         printf("vm_rpc_container_status error!\n");
         code = REQUEST_FAILED;
         ret = VOS_ERR;
     }
-    printf("container_cnt = %d\n", container_cnt);
-    if (container_cnt == 0) {    //是否容器个数为零
+    printf("container_num = %d\n", container_num);
+    if (container_num == 0) {    //是否容器个数为零
         code = REQUEST_FAILED;
-        if (container_info != NULL) {			//将内存释放掉
-            VOS_Free(container_info);
-            container_info = NULL;
+        if (container_list != NULL) {			//将内存释放掉
+            VOS_Free(container_list);
+            container_list = NULL;
+            ret = VOS_ERR;
         }
     } else {                     //如果个数不等于零
-        contiainer_config_reply.contPara_len = container_cnt;
-        contiainer_config_reply.contPara = (container_conf_cmd_s *)VOS_Malloc(MID_SGDEV,
-            sizeof(container_conf_cmd_s) * container_cnt);
-        if (contiainer_config_reply.contPara == NULL) {
-            printf("malloc use failure\n");
+        if (sg_container_status_to_reply(&contiainer_config_reply, container_num, container_list) != VOS_OK) {
             code = REQUEST_FAILED;
             ret = VOS_ERR;
         }
-        (void)memset_s(contiainer_config_reply.contPara, sizeof(container_conf_cmd_s)  * container_cnt,
-            0, sizeof(container_conf_cmd_s) * container_cnt);
-        for (num = 0; num < container_cnt; num++) {
-            memcpy_s(contiainer_config_reply.contPara[num].container, DATA_BUF_F64_SIZE, container_info[num].container_name,
-                strlen(container_info[num].container_name));  //容器名称赋值
-            contiainer_config_reply.contPara[num].cfgCpu.cpus = sg_hamming_weight(container_info[num].cpu_mask);              //CPU核数赋值
-            printf("container_info[%d].cpu_mask = %lld\n", num, container_info[num].cpu_mask);
-
-            contiainer_config_reply.contPara[num].cfgCpu.cpuLmt = container_info[num].cpu_threshold;                          //CPU监控阈值
-            contiainer_config_reply.contPara[num].cfgMem.memory = container_info[num].container_mem_size;                     //内存限值赋值
-            contiainer_config_reply.contPara[num].cfgMem.memLmt = container_info[num].memory_threshold;                       //内存监控阈值赋值
-            contiainer_config_reply.contPara[num].cfgDisk.disk = container_info[num].container_storage_size;                  //存储限值赋值
-            contiainer_config_reply.contPara[num].cfgDisk.diskLmt = container_info[num].storage_threshold;                    //磁盘存储监控阈值，百分数
-
-            printf("contiainer_config_reply.contPara[%d].cfgCpu.cpus = %d\n", num, contiainer_config_reply.contPara[num].cfgCpu.cpus);
-            printf("contiainer_config_reply.contPara[%d].cfgCpu.cpuLmt = %d\n", num, contiainer_config_reply.contPara[num].cfgCpu.cpuLmt);
-            printf("contiainer_config_reply.contPara[%d].cfgMem.memory = %d\n", num, contiainer_config_reply.contPara[num].cfgMem.memory);
-            printf("contiainer_config_reply.contPara[%d].cfgMem.memLmt = %d\n", num, contiainer_config_reply.contPara[num].cfgMem.memLmt);
-            printf("contiainer_config_reply.contPara[%d].cfgDisk.disk = %d\n", num, contiainer_config_reply.contPara[num].cfgDisk.disk);
-            printf("contiainer_config_reply.contPara[%d].cfgDisk.diskLmt = %d\n", num, contiainer_config_reply.contPara[num].cfgDisk.diskLmt);
-            // contiainer_config_reply.contPara[num].port =                                //端口资源配置参数
-
-        }
-        if (container_info != NULL) {			//将内存释放掉
-            VOS_Free(container_info);
-            container_info = NULL;
+        if (container_list != NULL) {			//将内存释放掉
+            VOS_Free(container_list);
+            container_list = NULL;
         }
     }
-
-    // sysman_rpc_transport_close();
-    //中间件执行
-    // gboolean vm_status_call_get_container_device_list(char *container_name, container_dev_node **node_list, int *node_cnt, char *errRet, size_t errLen);
-
     if (code != REQUEST_SUCCESS) {
         sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
     }
@@ -1052,16 +1310,42 @@ void sg_handle_container_upgrade_cmd(int32_t mid, container_upgrade_cmd_s cmdobj
     // cmdobj.file.sign.md5 = 
 }
 
-//容器日志召回   先略过
-void sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s cmdobj)
+//容器日志召回
+int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmdobj)
 {
-    mqtt_data_info_s *item = NULL;
+    int ret = VOS_OK;
     uint16_t code = REQUEST_SUCCESS;
-    char errormsg[DATA_BUF_F256_SIZE];
-    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
-    file_info_s fileinfo;
-    //中间件执行
+    mqtt_data_info_s *item             = NULL;
+    file_info_s fileinfo               = { 0 };
+    char errmsg[SYSMAN_RPC_ERRMSG_MAX] = { 0 };
+    char errormsg[DATA_BUF_F256_SIZE]         = { 0 };
+    char file_road[DATA_BUF_F64_SIZE]         = { 0 };
 
+    (void)sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
+
+/*   //中间件执行
+    if(appm_rpc_transport_open() != VOS_OK) {
+        ssp_syslog(LOG_ERR, SYSLOG_LOG, SGDEV_MODULE, "open appm failed!\n");
+        code = REQUEST_FAILED;
+        ret = VOS_ERR;
+    }
+    ret = app_management_status_call_get_app_log(cmdobj->container, "all", unsigned long start_time, unsigned long end_time, char *errmsg);  //时间设置翟工建议 开始时间为容器安装时间   结束时间为当前时间
+    appm_rpc_transport_close();
+    if (ret != VOS_OK) {
+        printf("app_management_status_call_get_app_info error! \n");
+        ret = VOS_ERR;
+    }
+    (void)sprintf_s(fileinfo.name, DATA_BUF_F64_SIZE, "{%s}.log", cmdobj->container);
+//    fileinfo.fileType = 
+    memcpy_s(fileinfo.url, DATA_BUF_F64_SIZE, cmdobj->url, strlen(cmdobj->url));
+    (void)sprintf_s(file_road, DATA_BUF_F256_SIZE, "/run/shm/appm/{%s}/app_log_dir", cmdobj->container);
+    fileinfo.size = getfilesize(file_road);
+    //MD5
+        printf("sgdevagent**** : fileinfo.md5 = %s.\n", fileinfo.md5);
+        sg_tolower(file.md5, strlen(file.md5));
+    }
+    //   fileinfo.sign = 
+*/
     if (code != REQUEST_SUCCESS) {
         sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
     }
@@ -1070,6 +1354,7 @@ void sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s cmd
     sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
     sg_pack_container_log_get_reply(code, mid, errormsg, &fileinfo, item->msg_send);
     sg_push_pack_item(item);
+    return ret;
 }
 
 //应用安装控制
@@ -1185,6 +1470,7 @@ void sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmdobj)
 
     sg_pack_app_stop_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
+    return ret;
 }
 //应用卸载
 void sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj)
@@ -1215,6 +1501,7 @@ void sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj)
 
     sg_pack_app_uninstall_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
+    return ret;
 }
 //应用使能
 void sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
@@ -1248,7 +1535,7 @@ void sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
 //应用去使能
 void sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
 {
-    int ret = 0;
+    int ret = VOS_OK;
     mqtt_data_info_s *item = NULL;
     APPM_OPERATION_PARA  para = { 0 };
     appm_error_message errmsg = { 0 };
@@ -1274,70 +1561,137 @@ void sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
 
     sg_pack_app_unenble_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
+    return ret;
 }
 
-//应用配置修改     不支持 先略过
-void sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s cmdobj)
+
+static int sg_appm_modify_app_info_cmd(APPM_OPERATION_PARA *para)
 {
-    mqtt_data_info_s *item = NULL;
-    uint16_t code = REQUEST_SUCCESS;
-    char errormsg[DATA_BUF_F256_SIZE];
-    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
-    //中间件执行
-    if (code != REQUEST_SUCCESS) {
-        sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
+    appm_error_message err_msg = { 0 };
+    (void)memset_s(&err_msg, sizeof(appm_error_message), 0, sizeof(appm_error_message));
+    if(para == NULL || para->lxc_name == NULL || para->app_name == NULL) {
+        return VOS_ERR;
     }
+
+    if(appm_rpc_transport_open()) {
+        (void)printf("Connect to rpc server error.\r\n");
+        return VOS_ERR;
+    }
+
+    if (app_management_action_call_app_set_config(para, &err_msg)) {
+        printf("app_management_action_call_app_set_config error!\n");
+        return VOS_ERR;
+    }
+    appm_rpc_transport_close();
+    return VOS_OK;
+}
+
+
+//应用配置修改
+int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmdobj)
+{
+    int ret = VOS_OK;
+    int cpus = 0, i;
+    uint16_t code = REQUEST_SUCCESS;
+
+    char errormsg[DATA_BUF_F256_SIZE];
+    APPM_OPERATION_PARA para_obj    = { 0 };
+    mqtt_data_info_s *item          = NULL;
+    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
+
+    memcpy_s(para_obj.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->container, strlen(cmdobj->container));
+    memcpy_s(para_obj.app_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->app, strlen(cmdobj->app));
+    cpus = cmdobj->cfgCpu.cpus;
+    para_obj.cpu_mask = 0;
+    for (i = 0; i < cpus; i++) {
+        para_obj.cpu_mask |= i;
+    }
+    para_obj.cpu_threshold = cmdobj->cfgCpu.cpuLmt;
+    para_obj.memory_limit = cmdobj->cfgMem.memory;
+    para_obj.memory_threshold = cmdobj->cfgMem.memLmt;
+    if (sg_appm_modify_app_info_cmd(&para_obj) != VOS_OK) {
+        code = REQUEST_FAILED;
+        ret = VOS_ERR;
+    }
+    printf("para_obj.lxc_name           = %s\n", para_obj.lxc_name);
+    printf("para_obj.app_name           = %s\n", para_obj.app_name);
+    printf("cmdobj->cfgCpu.cpus         = %d\n", cmdobj->cfgCpu.cpus);
+    printf("para_obj.cpu_mask           = %lu\n", para_obj.cpu_mask);
+    printf("para_obj.cpu_threshold      = %d\n", para_obj.cpu_threshold);
+    printf("para_obj.memory_limit       = %d\n", para_obj.memory_limit);
+    printf("para_obj.memory_threshold   = %d\n", para_obj.memory_threshold);
+
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
     sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
+    //中间件执行
+    if (code != REQUEST_SUCCESS) {
+        sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
+    }
     sg_pack_app_param_set_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
+    return ret;
 }
 //应用配置状态查询命令
 void sg_handle_app_param_get(int32_t mid, char *container_name)
 {
-    int ret = 0;
-    uint16_t num = 0;
-    mqtt_data_info_s *item = NULL;
-    app_info_t *info = NULL;
+    int ret         = VOS_OK;
+    int app_cnt     = 0;
+    uint16_t num    = 0;
     uint16_t code = REQUEST_SUCCESS;
-    char errormsg[DATA_BUF_F256_SIZE];
-    char lxc_name[1024];
-    int app_cnt = 0;
+    char cpu_core[128]          = { 0 };
+    char errormsg[DATA_BUF_F256_SIZE]  = { 0 };
+    app_conf_reply_s statusobj  = { 0 };
+    mqtt_data_info_s *item      = NULL;
+    app_info_t *app_info        = NULL;
+
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
-    app_conf_reply_s statusobj = { 0 };
     //中间件执行
     if (appm_rpc_transport_open() != VOS_OK) {
         code = REQUEST_FAILED;
         ret = VOS_ERR;
     }
-    ret = app_management_status_call_get_app_info(lxc_name, &info, &app_cnt, errormsg);
+    ret = app_management_status_call_get_app_info(container_name, &app_info, &app_cnt, errormsg);
     appm_rpc_transport_close();
     if (ret != VOS_OK) {
         printf("app_management_status_call_get_app_info error! \n");
         ret = VOS_ERR;
     }
     statusobj.app_num = app_cnt;
-    if (NULL != lxc_name) {
-        memcpy_s(statusobj.container, DATA_BUF_F64_SIZE, lxc_name, strlen(lxc_name) + 1);  //容器名称赋值
+    memcpy_s(statusobj.container, DATA_BUF_F64_SIZE, container_name, strlen(container_name));
+    printf("app_cnt = %d\n", app_cnt);
+    printf("statusobj.container = %s\n", statusobj.container);
+
+    statusobj.appCfgs = (app_cfgs_info_s*)VOS_Malloc(MID_SGDEV, sizeof(app_cfgs_info_s) * app_cnt);            //记得释放
+    if (statusobj.appCfgs == NULL) {
+        printf("malloc use failure\n");
+        code = REQUEST_FAILED;
+        ret = VOS_ERR;
     }
-    for (num = 0; num < statusobj.app_num; num++) {
-        statusobj.appCfgs[num].cfgCpu.cpus = info->services[num].cpu_usage_current;						//CPU核数（例如值为2,3,4）
-        statusobj.appCfgs[num].cfgCpu.cpuLmt = info->services[num].cpu_usage_threshold; 					//CPU监控阈值
-        statusobj.appCfgs[num].cfgMem.memory = info->services[num].memory_usage_current;					//内存限值,单位： M Byte
-        statusobj.appCfgs[num].cfgMem.memLmt = info->services[num].memory_usage_threshold; 					//内存监控阈值，百分数
-        if (NULL != info->services[num].name) {
-            memcpy_s(statusobj.appCfgs[num].app, DATA_BUF_F64_SIZE, info->services[num].name, strlen(info->services[num].name) + 1); 	//应用文件名字
-        }
-    }
-    if (code != REQUEST_SUCCESS) {
-        sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
+    (void)memset_s(statusobj.appCfgs, sizeof(app_cfgs_info_s) * app_cnt, 0, sizeof(app_cfgs_info_s) * app_cnt);
+    for (num = 0; num < app_cnt; num++) { 
+        memcpy_s(statusobj.appCfgs[num].app, DATA_BUF_F64_SIZE, app_info[num].name, strlen(app_info[num].name));
+        printf("statusobj.appCfgs[%d].app = %s\n", num, statusobj.appCfgs[num].app);
+        
+
+        statusobj.appCfgs[num].cfgCpu.cpus = sg_hamming_weight(app_info[num].services->cpu_mask);
+        printf("******cpu_core*****  = %s\n", cpu_core);
+        printf("******statusobj.appCfgs[%d].cfgCpu.cpus*****  = %d\n",num, statusobj.appCfgs[num].cfgCpu.cpus);
+        statusobj.appCfgs[num].cfgCpu.cpuLmt = app_info[num].services->cpu_usage_threshold;
+        statusobj.appCfgs[num].cfgMem.memory = app_info[num].services->memory_usage_current;
+        statusobj.appCfgs[num].cfgMem.memLmt = app_info[num].services->memory_usage_threshold;
+        printf("******statusobj.appCfgs[%d].cfgCpu.cpuLmt*****  = %d\n",num, statusobj.appCfgs[num].cfgCpu.cpuLmt);
+        printf("******statusobj.appCfgs[%d].cfgMem.memory*****  = %d\n",num, statusobj.appCfgs[num].cfgMem.memory);
+        printf("******statusobj.appCfgs[%d].cfgMem.memLmt*****  = %d\n",num, statusobj.appCfgs[num].cfgMem.memLmt);
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
     sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+
     sg_pack_app_param_get_reply(code, mid, errormsg, &statusobj, item->msg_send);
+    VOS_Free(statusobj.appCfgs); //释放
+    statusobj.appCfgs = NULL;
     sg_push_pack_item(item);
 }
 
@@ -1426,7 +1780,7 @@ void sg_handle_app_status_get(int32_t mid, char *container_name)
             statusobj.apps[num].process[num_process].cpuRate = app_info[num].services[num_process].cpu_usage_current;		//当前 CPU 使用率，百分比数据
             statusobj.apps[num].process[num_process].memLmt = app_info[num].services[num_process].memory_usage_threshold;	//内存检测阈值，百分比数据
             statusobj.apps[num].process[num_process].memUsed = app_info[num].services[num_process].memory_usage_current;	//当前内存使用空间的大小，百分比数据
-            sprintf_s(statusobj.apps[num].process[num_process].startTime, DATA_BUF_F64_SIZE, "%d-%d-%d %d:%d:%d",
+            sprintf_s(statusobj.apps[num].process[num_process].startTime, DATA_BUF_F64_SIZE, "%04d-%02d-%02d %02d:%02d:%02d",
                 app_info[num].services[num_process].start_time.year, app_info[num].services[num_process].start_time.month,
                 app_info[num].services[num_process].start_time.day, app_info[num].services[num_process].start_time.hour,
                 app_info[num].services[num_process].start_time.minute, app_info[num].services[num_process].start_time.second);  //表示服务启动时间

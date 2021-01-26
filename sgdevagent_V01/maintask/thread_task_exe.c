@@ -211,7 +211,7 @@ static void sg_deal_container_log_get_cmd(int32_t mid, char* param)
     }
     container_log_recall_cmd_s cmdobj = { 0 };
     if (VOS_OK == sg_unpack_container_log_get_cmd(jparam, &cmdobj)) {
-        sg_handle_container_log_get_cmd(mid, cmdobj);
+        sg_handle_container_log_get_cmd(mid, &cmdobj);
     }
     return;
 }
@@ -317,7 +317,7 @@ static void sg_deal_app_param_set_cmd(int32_t mid, char* param)
     }
     app_conf_cmd_s cmdobj = { 0 };
     if (VOS_OK == sg_unpack_app_param_set_cmd(jparam, &cmdobj)) {
-        sg_handle_app_param_set_cmd(mid, cmdobj);
+        sg_handle_app_param_set_cmd(mid, &cmdobj);
     }
     return;
 }

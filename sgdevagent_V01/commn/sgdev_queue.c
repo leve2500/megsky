@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <pthread.h>
 #include "vrp.h"
 #include "vos_typdef.h"
 #include "vos_errno.h"
@@ -11,6 +12,7 @@
 #include "sgdev_queue.h"
 #include "sgdev_mutex.h"
 
+pthread_mutex_t g_pack_mqtt_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 uint32_t create_unpack_queue_id = 0;
 uint32_t create_pack_queue_id = 0;
@@ -146,7 +148,8 @@ uint32_t sg_get_que_app_id(void)
 void sg_push_pack_item(mqtt_data_info_s *item)
 {
     //存在多个地方发送队列，必须加锁
-    sg_lock();
+    //sg_lock();
+    pthread_mutex_lock(&g_pack_mqtt_mutex);
     uint32_t ret;
     uint32_t msgType = QUEUE_PACK;				 // 定义消息传递类型
     VOS_UINT32 freeRet = 0;
@@ -167,7 +170,8 @@ void sg_push_pack_item(mqtt_data_info_s *item)
             printf("bus_inter_thread VOS_Free fail \n");
         }
     }
-    sg_unlock();
+    //sg_unlock();
+    pthread_mutex_unlock(&g_pack_mqtt_mutex);
 }
 
 void sg_push_unpack_item(mqtt_data_info_s *item)

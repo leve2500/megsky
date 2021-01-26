@@ -50,7 +50,52 @@ static int sg_getwithapp(json_t *obj, with_app_info_s *withappobj)
     }
     return VOS_OK;
 }
-
+//解析cfgCpu对象
+static int sg_getcfgcpu(json_t *obj, cfg_cpu_info_s *cfgcpuobj)
+{
+    if (json_is_object(obj)) {
+        if (json_into_uint32_t(&cfgcpuobj->cpus, obj, "cpus") != VOS_OK) {
+            return VOS_ERR;
+        }
+        if (json_into_uint32_t(&cfgcpuobj->cpuLmt, obj, "cpuLmt") != VOS_OK) {
+            return VOS_ERR;
+        }
+    } else {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}
+//解析cfgMem对象
+static int sg_getcfgmem(json_t *obj, cfg_mem_info_s *cfgmemobj)
+{
+    if (json_is_object(obj)) {
+        if (json_into_uint32_t(&cfgmemobj->memory, obj, "memory") != VOS_OK) {
+            return VOS_ERR;
+        }
+        if (json_into_uint32_t(&cfgmemobj->memLmt, obj, "memLmt") != VOS_OK) {
+            return VOS_ERR;
+        }
+    } else {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}
+//解析cfgDisk对象
+static int sg_getcfgdisk(json_t *obj, cfg_disk_info_s *cfgdiskobj)
+{
+    if (json_is_object(obj)) {
+        if (json_into_uint32_t(&cfgdiskobj->disk, obj, "disk") != VOS_OK) {
+            return VOS_ERR;
+        }
+        if (json_into_uint32_t(&cfgdiskobj->diskLmt, obj, "diskLmt") != VOS_OK) {
+            return VOS_ERR;
+        }
+    } else {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}
+/*======================================容器管理======================== */
 //容器安装控制 
 int sg_unpack_container_install_cmd(json_t *obj, container_install_cmd_s *cmdobj)
 {
@@ -205,10 +250,6 @@ int sg_unpack_container_param_set_cmd(json_t *obj, container_conf_cmd_s *cmdobj)
     json_t *cfgDisk_info = NULL;
     json_t *mount_info = NULL;
     json_t *dev_info = NULL;
-    json_t *mount_table = NULL;
-    json_t *dev_table = NULL;
-    char *array_mount_str = NULL;
-    char *array_dev_str = NULL;
     if (json_into_string(cmdobj->container, obj, "container") != VOS_OK) {
         return VOS_ERR;
     }
@@ -226,18 +267,19 @@ int sg_unpack_container_param_set_cmd(json_t *obj, container_conf_cmd_s *cmdobj)
         return VOS_ERR;
     }
     mount_info = json_object_get(obj, "mount");
-    len = cmdobj->mount_len;
-    for (i = 0; i < len; i++) {
-        mount_table = json_array_get(mount_info, i);
-        array_mount_str = json_string_value(mount_table);
-        memcpy_s(cmdobj->mount[i], MSG_ARRVD_MAX_LEN, array_mount_str, strlen(array_mount_str) + 1);
+    if (mount_info != NULL) {
+        cmdobj->mount_len = json_array_size(mount_info);
+        for (i = 0; i < cmdobj->mount_len; i++) {
+            json_into_array_string(cmdobj->mount[i],json_array_get(mount_info, i));
+        }
     }
+
     dev_info = json_object_get(obj, "dev");
-    len = cmdobj->dev_len;
-    for (i = 0; i < len; i++) {
-        dev_table = json_array_get(dev_info, i);
-        array_dev_str = json_string_value(dev_table);
-        memcpy_s(cmdobj->dev[i], MSG_ARRVD_MAX_LEN, array_dev_str, strlen(array_dev_str) + 1);
+    if (dev_info != NULL) {
+        cmdobj->dev_len = json_array_size(dev_info);
+        for (i = 0; i < cmdobj->dev_len; i++) {
+            json_into_array_string(cmdobj->dev[i], json_array_get(dev_info, i));
+        }
     }
     return VOS_OK;
 }
@@ -259,12 +301,9 @@ void sg_pack_container_param_set_reply(uint16_t code, int32_t mid, const char *e
 static void sg_setmount(json_t *mountsobj_s, container_conf_cmd_s infobj)
 {
     uint16_t t = 0;
-    uint16_t lent = 0;
     json_t *mountobj_s = NULL;
-    mountsobj_s = json_array();
     if (NULL != mountsobj_s) {
-        lent = infobj.mount_len;
-        for (t = 0; t < lent; t++) {
+        for (t = 0; t < infobj.mount_len; t++) {
             mountobj_s = json_object();
             if (NULL != mountobj_s) {
                 mountobj_s = json_string(infobj.mount[t]);
@@ -277,12 +316,9 @@ static void sg_setmount(json_t *mountsobj_s, container_conf_cmd_s infobj)
 static void sg_setdev(json_t *devsobj_s, container_conf_cmd_s infobj)
 {
     uint16_t t = 0;
-    uint16_t lent = 0;
     json_t *devobj_s = NULL;
-    devsobj_s = json_array();
     if (NULL != devsobj_s) {
-        lent = infobj.dev_len;
-        for (t = 0; t < lent; t++) {
+        for (t = 0; t < infobj.dev_len; t++) {
             devobj_s = json_object();
             if (NULL != devobj_s) {
                 devobj_s = json_string(infobj.dev[t]);
@@ -292,7 +328,7 @@ static void sg_setdev(json_t *devsobj_s, container_conf_cmd_s infobj)
     }
 }
 
-//容器配置状态查询应答  优化比较复杂——先略过-------------------------------------------------------------------------------
+//容器配置状态查询应答
 void sg_pack_container_param_get_reply(uint16_t code, int32_t mid, const char *error_msg, container_config_reply_s *statusobj, char *msg)
 {
     uint16_t i = 0;
@@ -312,8 +348,8 @@ void sg_pack_container_param_get_reply(uint16_t code, int32_t mid, const char *e
             cfgCpuobj = json_object();
             cfgMemobj = json_object();
             cfgDiskobj = json_object();
-            mountobj = json_object();
-            devobj = json_object();
+            mountobj = json_array();
+            devobj = json_array();
             if (contPara_obj != NULL) {
                 json_object_set_new(contPara_obj, "container", json_string(statusobj->contPara[i].container));
                 if (strlen(statusobj->contPara[i].port) != 0) {

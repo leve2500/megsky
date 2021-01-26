@@ -199,7 +199,6 @@ int sg_unpack_app_param_get(json_t *obj, char *msg)
 void sg_pack_app_param_get_reply(uint16_t code, int32_t mid, const char *error_msg, app_conf_reply_s *statusobj, char *msg)
 {
     uint16_t i = 0;
-    uint16_t len = 0;
     json_t *param = NULL;
     json_t *appCfgsobj = NULL;
     json_t *appCfgsobjs = NULL;
@@ -208,8 +207,7 @@ void sg_pack_app_param_get_reply(uint16_t code, int32_t mid, const char *error_m
     param = json_object();
     appCfgsobjs = json_array();
     if (NULL != appCfgsobjs) {
-        len = statusobj->app_num;
-        for (i = 0; i < len; i++) {
+        for (i = 0; i < statusobj->app_num; i++) {
             appCfgsobj = json_object();
             cfgCpuobj = json_object();
             cfgMemobj = json_object();

@@ -76,7 +76,7 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
         install_info.dev_map.dev_num = cmdobj->dev_len;
         install_info.dev_map.dev_list = (install_dev_node*)VOS_Malloc(MID_SGDEV, sizeof(install_dev_node) * cmdobj->dev_len);            //记得释放
         if (install_info.dev_map.dev_list != NULL) {
-            for (i = 0; i < cmdobj->dev_len; i++)
+            for (i = 0; i < cmdobj->dev_len; i++)   
             {
                 if (sg_str_colon(cmdobj->dev[i], strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
                     sprintf_s(errmsg, DATA_BUF_F128_SIZE, "dev map is not correct");
@@ -95,7 +95,7 @@ int sg_container_install(container_install_cmd_s *cmdobj, char *errmsg)
         install_info.mount_dir_add.add_type = MOUNT_DIR_ADD_OVERWRITE;
         install_info.mount_dir_add.mount_dir = (mount_dir_cfg_s*)VOS_Malloc(MID_SGDEV, sizeof(mount_dir_cfg_s) * cmdobj->mount_len);            //记得释放
         if (install_info.mount_dir_add.mount_dir != NULL) {
-            for (i = 0; i < cmdobj->mount_len; i++)
+            for (i = 0; i < cmdobj->mount_len; i++) //不能再用i
             {
                 if (sg_str_colon(cmdobj->mount[i], strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
                     sprintf_s(errmsg, DATA_BUF_F128_SIZE, "dev map is not correct");

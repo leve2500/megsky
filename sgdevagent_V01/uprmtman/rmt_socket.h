@@ -53,7 +53,7 @@ int sg_connect_socket(void);
 int sg_read_data(char* data, int count);
 
 // 发送数据，返回：实际发送数据字节个数，若返回-1，表示连接中断
-int sg_write_data(char* data, int count);
+int sg_write_data(const char* data, int count);
 
 int sg_cloese_socket(void);
 

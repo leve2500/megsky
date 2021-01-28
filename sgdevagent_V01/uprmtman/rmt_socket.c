@@ -167,41 +167,42 @@ int sg_connect_socket(void)
     {
         sg_init_rw_set(0, 1);// 初始化超时时间和fd_set
         nResult = select(m_socket + 1, NULL, &m_writeSet, NULL, &m_tTimeout);
-        if (nResult <= 0)								// 连接没有建立
+        if (nResult <= 0) {   // 连接没有建立
             sg_cloese_socket();
-        else if (nResult > 0)
-        {
-            if (FD_ISSET(m_socket, &m_writeSet))
-            {
+        } else {
+            if (FD_ISSET(m_socket, &m_writeSet)) {
                 m_ConnectState = SOCKET_CONNECTNORMAL;
                 getsockopt(m_socket, SOL_SOCKET, SO_ERROR, (char*)&error, (socklen_t*)&len);
-                if (!error && bFlag)
+                if (!error && bFlag) {
                     m_ConnectState = SOCKET_CONNECTNORMAL;
-                else
+                } else {
                     sg_cloese_socket();
-            } else
+                }
+            } else {
                 sg_cloese_socket();
-        }
-    } else if (m_ConnectState == SOCKET_NOTCONNECTTED)
-    {
-        if (sg_init_socket())							// socket初始化
-        {
-            int ret = connect(m_socket, (SA*)&m_sockaddr, sizeof(m_sockaddr));
-            if (ret < 0)
-            {
-                if (errno == EINPROGRESS || errno == 0)					// 非阻塞方式，连接不能立即完成
-                    m_ConnectState = SOCKET_CONNECTTING;
-                else// 连接失败
-                    sg_cloese_socket();
-            } else// 连接成功
-                m_ConnectState = SOCKET_CONNECTNORMAL;
+            }
         }
     }
-    return m_ConnectState;
+} else if (m_ConnectState == SOCKET_NOTCONNECTTED)
+{
+    if (sg_init_socket())							// socket初始化
+    {
+        int ret = connect(m_socket, (SA*)&m_sockaddr, sizeof(m_sockaddr));
+        if (ret < 0)
+        {
+            if (errno == EINPROGRESS || errno == 0)					// 非阻塞方式，连接不能立即完成
+                m_ConnectState = SOCKET_CONNECTTING;
+            else// 连接失败
+                sg_cloese_socket();
+        } else// 连接成功
+            m_ConnectState = SOCKET_CONNECTNORMAL;
+    }
+}
+return m_ConnectState;
 }
 
 // 接收数据
-int sg_read_data(char* data, int count)
+int sg_read_data(const char* data, int count)
 {
     int readCount = 0;
     sg_init_rw_set(0, 1);

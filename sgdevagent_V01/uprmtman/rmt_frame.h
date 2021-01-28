@@ -8,7 +8,7 @@ extern "C" {
 #endif
 
 
-#define RECVBUFLEN 1024 * 16
+#define RECVBUFLEN (1024 * 16)
 
 
 int16_t sg_packframe(char * msg_send, mqtt_data_info_s* info);
@@ -21,6 +21,6 @@ uint32_t Recv(uint8_t* pBuf, uint32_t ulSize, uint16_t usPos);
 
 #ifdef __cplusplus
 }
-#endif 
+#endif
 
 #endif

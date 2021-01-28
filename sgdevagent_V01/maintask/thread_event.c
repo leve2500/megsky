@@ -16,11 +16,39 @@
 #include "mqtt_pub.h"
 #include "mqtt_json.h"
 
+#include "task_deal.h"
 #include "thread_dev_insert.h"
 #include "thread_task_exe.h"
-#include "task_deal.h"
+#include "thread_event.h"
 
 uint32_t g_create_event_id = 0;
+
+typedef enum{
+    ALARM_WARNING = 1,
+    ALARM_MINOR,
+    ALARM_MAJOR,
+    ALARM_CRITICAL
+}AlarmServeritytype;
+
+typedef enum{
+    ALARM_RESTORE = 1,  //告警恢复
+    ALARM_GENERATE,        //告警生成
+    ALARM_UPDATE        //告警更新
+}AlarmIndicationType;
+
+typedef struct {
+    char function[ALARM_FUNCTION_LEN];      //32
+    char type[ALARM_TYPE_LEN];              //64
+    char qualifier[ALARM_QUALIFIER_LEN];    //256 
+    AlarmServeritytype severity;
+    AlarmIndicationType indication;
+    char params[ALARM_PARAMS_LEN]            //512
+}AlarmInfoType;
+
+typedef struct {
+    AlarmInfoType info;
+    char eventTime[ALARM_EVENTTIME_LEN]; //64
+}AlarmInfoExType;
 
 void sg_alarm_topic_pro(msg_buf, msg_len);
 int sg_event_deal_thread(void);
@@ -55,6 +83,7 @@ void sg_alarm_topic_pro(char *msg_buf, size_t msg_len)
     }
 
     alarm_status = (AlarmInfoStatusType *)msg_buf;
+
 
     //处理
 }

@@ -1,6 +1,6 @@
 
-#ifndef _MQTT_JSON_H_
-#define _MQTT_JSON_H_
+#ifndef _SG_MQTT_JSON_H_
+#define _SG_MQTT_JSON_H_
 
 #include "sgdev_struct.h"
 

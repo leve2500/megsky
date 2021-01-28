@@ -166,12 +166,9 @@ int sg_mqtt_pub_thread(void)
             case QUEUE_PACK:
                 info = (mqtt_data_info_s*)msg[1];
                 sendFlag = sg_mqtt_msg_publish(info->msg_send, info->pubtopic);
-                //发送失败放到哪里？ 链表中？
+                //发送失败放到哪里？ 链表中？ 
                 if (info != NULL) {
-                    freeRet = VOS_Free(info);
-                    if (freeRet != VOS_OK) {
-                        printf("bus_inter_thread VOS_Free fail \n");
-                    }
+                    (void)VOS_Free(info);
                 }
                 break;
             default:

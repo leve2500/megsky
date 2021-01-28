@@ -21,6 +21,7 @@
 #include "thread_task_exe.h"
 #include "thread_interact.h"
 #include "thread_manage.h"
+#include "thread_event.h"
 
 #include "timer_pack.h"
 #include "rmt_socket.h"
@@ -50,7 +51,7 @@ void sgdevagent_ignore_sig(int signum)
 
 void sgdevagent_sighandler(int signo)
 {
-    SGDEV_NOTICE(SYSLOG_LOG, SGDEV_MODULE, "sgdevagent receive sigo:%d",signo);
+    SGDEV_NOTICE(SYSLOG_LOG, SGDEV_MODULE, "sgdevagent receive sigo:%d", signo);
     switch (signo)
     {
     case SIGQUIT:
@@ -124,10 +125,10 @@ static void sg_create_task(void)
         printf(" \n VOS_T_Create task exe app fail! ret = %d!", ret);
     }
     // 事件处理
-     ret = (int)VOS_T_Create("skmg",VOS_T_PRIORITY_NORMAL,0,0,0,(TaskStartAddress_PF)sg_event_deal_thread,&g_create_event_id);
-     if(ret != VOS_OK){
-         printf(" \n VOS_T_Create task exe app fail!");
-     }
+    ret = (int)VOS_T_Create("skmg", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_event_deal_thread, &g_create_event_id);
+    if (ret != VOS_OK) {
+        printf(" \n VOS_T_Create task exe app fail!");
+    }
     if (MODE_RMTMAN == param.startmode) {                                                                                                           //socket收、发数据线程       
         ret = VOS_T_Create("sred", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_rpc_read_data_thread,
             &g_create_socket_read_id);
@@ -250,74 +251,43 @@ int main(int argc, char *argv[])
 {
     int ret = 0;
 
-    pthread_cond_t main_cond = PTHREAD_COND_INITIALIZER;
-    pthread_mutex_t main_mutex = PTHREAD_MUTEX_INITIALIZER;
-
     (void)sgdevagent_ignore_sig(SIGPIPE);
     (void)sgdevagent_ignore_sig(SIGRTMIN + 4);
 
     sg_log_init();      // 日志初始化
 
     ret = (int)SSP_Init();
-    if(ret != VOS_OK) {
-        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "SSP_Init failed ret:%d",ret);
+    if (ret != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "SSP_Init failed ret:%d", ret);
         goto main_error;
     }
 
-    //读参数文件
-    if (read_param_file() != VOS_OK) {
+    if (read_param_file() != VOS_OK) {     // 读参数文件
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read_param_file failed");
         goto main_error;
     }
 
-    //读周期参数
-    if (read_period_file() != VOS_OK) {
+    if (read_period_file() != VOS_OK) {     // 读周期参数
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read_period_file failed");
         goto main_error;
-    } 
-    if (sg_init() != VOS_OK) {
+    }
+    if (sg_init() != VOS_OK) {              // 初始化
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_init failed");
         goto main_error;
     }
-
-    sg_dev_param_info_s param = sg_get_param();
-
     //信号处理
     sg_handle_signal();
+    sg_dev_param_info_s param = sg_get_param();
 
-    if (MODE_RMTMAN == param.startmode) {
+    if (param.startmode == MODE_RMTMAN) {
         sg_sockket_init();
-        while (1) {
-            VOS_T_Delay(30 * 1000);
-        }
-        ret = sg_sockket_exit();
+        (void)sg_sockket_exit();
     } else {
-        if (sg_mqtt_init() != VOS_OK) {
-            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_mqtt_init failed");
-            goto main_error;
+        if (sg_mqtt_main_task() != VOS_OK)) {
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_mqtt_main_task failed");
         }
-        for (;;) {
-            if (sg_get_mqtt_connect_flag() != DEVICE_ONLINE) {
-                if (sg_agent_mqtt_connect() != VOS_OK) {
-                    continue;
-                }            
-                if (sg_create_sub_topic() != VOS_OK) {
-                    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect subscribe failed.\n");
-                    goto main_error;
-                }
-            }
-            VOS_T_Delay(30 * 1000);  //延时30秒
-            if (sg_get_dev_edge_reboot() == REBOOT_EDGE_SET) {
-                break;
-            }
-        }
+        sg_mqtt_exit();
     }
-    //for (;;) {
-    //    (void)pthread_mutex_lock(&main_mutex);
-    //    (void)pthread_cond_wait(&main_cond, &main_mutex);
-    //    (void)pthread_mutex_unlock(&main_mutex);
-    //}
-    sg_mqtt_exit();
     sg_exit();
 
 main_error:

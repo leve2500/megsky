@@ -335,4 +335,41 @@ sg_dev_section_info_s sg_get_section(void)
     return m_devSection;
 }
 
+//加密代码
+#include "sysman_def.h"
+#define MAX_KMC_CIPHER_HEAD_LEN 80
+int test_encrypt_by_kmc(const unsigned char* plainText,unsigned int plainLen,
+unsigned char* cipherText,unsigned int cipherBufLen,unsigned int * outCipherLen)
+{
+    int ret;
+    if(plainLen + MAX_KMC_CIPHER_HEAD_LEN >= cipherBufLen){
+        return -1;
+    }
+    if (sysman_rpc_transport_open() != VOS_OK) {
+        return VOS_ERR;
+    }
+    ret = Kmc_Encrypt(plainText,plainLen,cipherText,cipherBufLen,plainLen);
+    sysman_rpc_transport_close();
+    if(ret){
+        return -1;
+    }
+    return 0;
+}
 
+int test_decrypt_by_kmc(const unsigned char* cipherText ,unsigned int cipherLen,
+unsigned char* plainText,unsigned int plainBufLen,unsigned int * outPlainLen)
+{
+    int ret;
+    if(plainLen + MAX_KMC_CIPHER_HEAD_LEN <= cipherLen){
+        return -1;
+    }
+    if (sysman_rpc_transport_open() != VOS_OK) {
+        return VOS_ERR;
+    }
+    ret = Kmc_Decrypt(cipherText,cipherLen,plainText,plainBufLen,outPlainLen);
+    sysman_rpc_transport_close();
+    if(ret){
+        return -1;
+    }
+    return 0;
+}

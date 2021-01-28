@@ -360,7 +360,7 @@ typedef struct sg_dev_param_info {
     char            mqtttopicversion[DATA_BUF_F32_SIZE];    // 协议版本 目前为v1
     char            devid[DATA_BUF_F32_SIZE];               // 设备ID   字符串
     char            ip[DATA_BUF_F32_SIZE];                  // IP地址   字符串
-    uint32_t        port;                                   // 端口号
+    uint16_t        port;                                   // 端口号
     char            clientid[DATA_BUF_F32_SIZE];
     char            user[DATA_BUF_F32_SIZE];
     char            password[DATA_BUF_F32_SIZE];

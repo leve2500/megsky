@@ -27,7 +27,7 @@ static void sg_deal_dev_install_cmd(int32_t mid, char* param)
     json_t *jparam = NULL;
     jparam = load_json(param);
 
-    if (NULL == param) {
+    if (param == NULL) {
         printf("\n param is null,sg_deal_dev_install_cmd fail");
         return;
     }
@@ -240,6 +240,7 @@ static void sg_deal_app_start_cmd(int32_t mid, char* param)
         printf("\n param is null,sg_deal_app_start_cmd fail");
         return;
     }
+    
     app_control_cmd_s cmdobj = { 0 };
     if (VOS_OK == sg_unpack_app_control_cmd(jparam, &cmdobj)) {
         sg_handle_app_start_cmd(mid, &cmdobj);
@@ -616,7 +617,7 @@ int sg_task_execution_app_thread(void)
                 //处理函数
                 ret = sg_task_pro_app(msg[2], msg[3], param);
                 if (VOS_OK != ret) {
-                    printf("sg_task_pro_container fail \n");
+                    printf("sg_task_pro_app fail \n");
                 }
                 if (param != NULL) {
                     free(param);

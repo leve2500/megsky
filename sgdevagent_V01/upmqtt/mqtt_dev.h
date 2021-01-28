@@ -11,8 +11,8 @@
 =====================================================================*/
 
 
-#ifndef _JSON_FRAME_H_
-#define _JSON_FRAME_H_
+#ifndef __SG_MQTT_DEV_H__
+#define __SG_MQTT_DEV_H__
 
 
 #ifdef __cplusplus

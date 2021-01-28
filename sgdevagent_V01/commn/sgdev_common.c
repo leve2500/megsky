@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdbool.h>
+#include <string.h>
 #include <unistd.h>
 #include <limits.h>
 #include <sys/sysinfo.h>
@@ -7,7 +8,7 @@
 
 #include "vos_typdef.h"
 #include "vos_errno.h"
-#include "vos_mem.h"
+#include "vrp_mem.h"
 #include "ssp_mid.h"
 #include "sgdev_struct.h"
 
@@ -49,7 +50,7 @@ int sg_find(char *m_pbuf, int m_nlen, const char *i_pstr, int i_nnum, int i_nind
     if (i_pstr == NULL)
         return -1;
 
-    char *pos = NULL, 
+    char *pos = NULL;
     char *old_pos = NULL;
 
     if (i_nindex > m_nlen - 1 || i_nindex < 0) {
@@ -263,7 +264,6 @@ int sg_read_file_get(const char *p, char *desp)
     FILE *fp = NULL;
     char *buf = NULL;
     char real_path[PATH_MAX] = { 0 };
-    json_t *piload = NULL;
 
     filesize = getfilesize(p);
     if (filesize <= 0) {
@@ -306,7 +306,6 @@ int sg_file_common_get(const char *p, char *desp)
     FILE *fp;
     int ret = VOS_ERR;
     char buf[DEV_INFO_MSG_BUFFER_LEN] = { 0 };
-    char dstbuf[DEV_INFO_MSG_BUFFER_LEN] = { 0 };
     if (desp == NULL) {
         return ret;
     }

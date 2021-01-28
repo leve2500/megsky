@@ -4,8 +4,8 @@
 */
 
 
-#ifndef __MQTT_PUB_H__
-#define __MQTT_PUB_H__
+#ifndef __SG_MQTT_PUB_H__
+#define __SG_MQTT_PUB_H__
 
 #include "MQTTClient.h"
 
@@ -22,8 +22,9 @@ typedef struct mqtt_connect_data {
     int        mqtt_connect_flag;
 }mqtt_connect_data_s;
 
+int sg_mqtt_main_task();
 
-int sg_agent_mqtt_init(char *server_uri,char *client_id);
+int sg_agent_mqtt_init(char *server_uri, char *client_id);
 int sg_agent_mqtt_connect(void);
 
 int sg_mqtt_msg_publish(char* msg_send, char* pub_topic);

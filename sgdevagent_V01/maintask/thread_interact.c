@@ -11,7 +11,7 @@
 #include "vrp_queue.h"
 #include "ssp_mid.h"
 
-
+#include "sgdev_struct.h"
 #include "sgdev_queue.h"
 #include "mqtt_pub.h"
 #include "mqtt_dev.h"
@@ -56,7 +56,8 @@ static void sg_pack_container_upgrade_status(int32_t mid, int32_t jobId)
     int ret = VOS_OK;
     mqtt_data_info_s *item = NULL;
 
-    dev_status_reply_s status;
+    dev_status_reply_s status = { 0 };
+    (void)memset_s(&status, sizeof(dev_status_reply_s), 0, sizeof(dev_status_reply_s));
     if (TASK_EXE_CONTAINER_INSTALL == m_exe_state) {
         status = container_install_status;
     } else if (TASK_EXE_CONTAINER_UP == m_exe_state) {

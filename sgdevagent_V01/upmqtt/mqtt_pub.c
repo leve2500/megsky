@@ -43,11 +43,34 @@ volatile MQTTClient_deliveryToken g_deliveredtoken;
 MQTTClient_connectOptions g_conn_opts = MQTTClient_connectOptions_initializer;
 
 void sg_connLost(void *context, char *cause);
-int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_message *message)
+int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_message *message);
 void sg_delivered(void *context, MQTTClient_deliveryToken dt);
 void sg_agent_mqtt_disconnect(void);
 void sg_agent_mqtt_destroy(void);
 
+int sg_mqtt_main_task()
+{
+    if (sg_mqtt_init() != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_mqtt_init failed");
+        return VOS_ERR;
+    }
+    for (;;) {
+        if (sg_get_mqtt_connect_flag() != DEVICE_ONLINE) {
+            if (sg_agent_mqtt_connect() != VOS_OK) {
+                continue;
+            }
+            if (sg_create_sub_topic() != VOS_OK) {
+                SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect subscribe failed.\n");
+                return VOS_ERR;
+            }
+        }
+        if (sg_get_dev_edge_reboot() == REBOOT_EDGE_SET) {
+            break;
+        }
+        VOS_T_Delay(30 * 1000);  //延时30秒
+    }
+    return VOS_OK;
+}
 
 void sg_delivered(void *context, MQTTClient_deliveryToken dt)
 {
@@ -66,12 +89,10 @@ void sg_connLost(void *context, char *cause)
 
 int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_message *message)
 {
-    int ret = VOS_OK;
-    int err;
     int size;
     char *payloadptr = NULL;
     mqtt_data_info_s *item = NULL;
-    printf("ceshi*************\n<topic>: %s.**********\n", topicName);
+    printf("ceshi*************\n<topic>: %s.**********\n", topic);
     if(message == NULL) {
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "arrived message error.\n");   
         MQTTClient_free(topic);
@@ -82,7 +103,7 @@ int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_mess
         payloadptr = malloc((size_t)(message->payloadlen + 1));
         if(payloadptr != NULL) {
             printf("ceshi*************\n<payloadptr> == %s.**********\n", payloadptr);
-            (void)memcpy_s(payloadptr,(size_t)(message->payloadlen + 1),message->payload,(size_t)(message->payloadlen + 1))       
+            (void)memcpy_s(payloadptr,(size_t)(message->payloadlen + 1),message->payload,(size_t)(message->payloadlen + 1));       
             payloadptr[message->payloadlen] = 0;
 
             item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
@@ -106,7 +127,7 @@ int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_mess
     }
     MQTTClient_freeMessage(&message);
     MQTTClient_free(topic);
-    return ret;
+    return VOS_OK;
 }
 
 void sg_set_mqtt_connect_flag(int flag)
@@ -164,7 +185,12 @@ int sg_agent_mqtt_init(char *server_uri, char* client_id)
     return ret;
 
 }
-
+/* MQTTClient_connect 返回值 0成功
+    1拒绝连接，协议版本不支持
+    2标识符被拒绝
+    3服务器不可用
+    4用户名密码错误
+    5未授权 */
 int sg_agent_mqtt_connect(void)
 {
     int mqtt_ret = VOS_OK;
@@ -179,12 +205,6 @@ int sg_agent_mqtt_connect(void)
     mqtt_ret = MQTTClient_connect(g_client, &g_conn_opts);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
         SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect failed(ret = %d)).\n", mqtt_ret);
-        // 0成功
-        // 1拒绝连接，协议版本不支持
-        // 2标识符被拒绝
-        // 3服务器不可用
-        // 4用户名密码错误
-        // 5未授权
         sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
         return VOS_ERR;
     }
@@ -207,7 +227,6 @@ void sg_agent_mqtt_disconnect(void)
 
 void sg_agent_mqtt_destroy(void)
 {
-    int mqtt_ret;
     if (g_client != NULL) {
         MQTTClient_destroy(&g_client);
         SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt destroy.\n");
@@ -280,7 +299,6 @@ int sg_mqtt_msg_subscribe(char* topic, int qos)
 int sg_mqtt_init(void)
 {
     int rc = VOS_OK;
-    bool b_ret = false;
     sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
     char server_uri[DATA_BUF_F256_SIZE] = { 0 };
 

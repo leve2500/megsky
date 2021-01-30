@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-int sg_dev_install(device_upgrade_s *cmdobj, char *errmsg);
+int sg_dev_install(device_upgrade_s *cmd_obj, char *errmsg);
 
 #ifdef __cplusplus
 }

@@ -25,9 +25,9 @@ mqtt_data_info_s        m_faultinfo = { 0 };
 uint8_t         m_isCmdCome = 0;
 
 
-clock_t		m_dwLastCount;	//上次时间
-uint8_t		m_bValidFlag;	//定时标志
-uint32_t	m_dwDiffParam;	//定时间隔
+clock_t		m_dw_last_count;	//上次时间
+uint8_t		m_b_valid_flag;	//定时标志
+uint32_t	m_dw_diff_param;	//定时间隔
 
 
 static uint8_t FrmHeadToApciInf(uint8_t *pFrmhead)
@@ -93,19 +93,19 @@ static void AfterUnpackProc()
     m_usProcCnt = 0;
 }
 
-uint8_t* GetRecvBuf(uint16_t usPos)
+uint8_t* GetRecvBuf(uint16_t us_pos)
 {
-    //assert(usPos < RECVBUFLEN);
-    return &m_byAssistBuf[usPos];
+    //assert(us_pos < RECVBUFLEN);
+    return &m_byAssistBuf[us_pos];
 }
 
 
-uint16_t GetRecvNum(void)
+uint16_t sg_get_recvive_num(void)
 {
     return (RECVBUFLEN - m_usRecvCnt);
 }
 
-void SetRecvCnt(uint16_t usRecvCnt)
+void sg_set_recv_cnt(uint16_t usRecvCnt)
 {
     //assert((m_usRecvCnt + usRecvCnt <= RECVBUFLEN));
 
@@ -114,14 +114,12 @@ void SetRecvCnt(uint16_t usRecvCnt)
     m_usAssistCnt += usRecvCnt;
 }
 
-uint32_t Recv(uint8_t* pBuf, uint32_t ulSize, uint16_t usPos)
+void sg_recvive(uint8_t* pBuf, uint32_t ulSize, uint16_t us_pos)
 {
-    int index;
-    memcpy(&m_byAssistBuf[usPos], pBuf, ulSize);
-    return 0;
+    memcpy_s(&m_byAssistBuf[us_pos], RECVBUFLEN, pBuf, ulSize);
 }
 
-void UnPackFrame(void)
+void sg_unpack_frame(void)
 {
     int index = 0;
     // 1.处理缓冲区

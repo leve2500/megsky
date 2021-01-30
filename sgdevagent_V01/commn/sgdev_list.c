@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "sgdev_list.h"
 
-
 void list_init(list_t *list)
 {
     list->head = NULL;

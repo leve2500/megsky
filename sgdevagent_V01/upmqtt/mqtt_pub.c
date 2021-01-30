@@ -10,35 +10,31 @@
 #include "sgdev_param.h"
 #include "sgdev_queue.h"
 
-#define     SG_KEEP_ALIVE_INTERVAL (20)
-#define     SG_VER_SIZE (24)
 
 mqtt_connect_data_s g_mqtt_connect_flag;
+uint16_t g_port = 1883;
 
-uint16_t    g_port;
-char        g_ip[DATA_BUF_F32_SIZE];
-char        g_ver[SG_VER_SIZE];
-char        g_devid[DATA_BUF_F32_SIZE];
-char        g_clientid[DATA_BUF_F32_SIZE];
-char        g_user[DATA_BUF_F32_SIZE];
-char        g_password[DATA_BUF_F32_SIZE];
+char g_ip[DATA_BUF_F32_SIZE] = { 0 };
+char g_ver[SG_VER_SIZE] = { 0 };
+char g_devid[DATA_BUF_F32_SIZE] = { 0 };
+char g_clientid[DATA_BUF_F32_SIZE] = { 0 };
+char g_user[DATA_BUF_F32_SIZE] = { 0 };
+char g_password[DATA_BUF_F32_SIZE] = { 0 };
 
-char        g_top_data_sub_dev_com[DATA_BUF_F256_SIZE];
-char        g_top_data_sub_dev_res[DATA_BUF_F256_SIZE];
-char        g_top_data_sub_ctai_com[DATA_BUF_F256_SIZE];
-char        g_top_data_sub_app_com[DATA_BUF_F256_SIZE];
+char g_top_data_sub_dev_com[DATA_BUF_F256_SIZE] = { 0 };
+char g_top_data_sub_dev_res[DATA_BUF_F256_SIZE] = { 0 };
+char g_top_data_sub_ctai_com[DATA_BUF_F256_SIZE] = { 0 };
+char g_top_data_sub_app_com[DATA_BUF_F256_SIZE] = { 0 };
 
-char        g_device_reply_pub[DATA_BUF_F256_SIZE];
-char        g_device_request_pub[DATA_BUF_F256_SIZE];
-char        g_device_data_pub[DATA_BUF_F256_SIZE];
-char        g_container_reply_pub[DATA_BUF_F256_SIZE];
-char        g_container_data_pub[DATA_BUF_F256_SIZE];
-char        g_app_reply_pub[DATA_BUF_F256_SIZE];
-char        g_app_data_pub[DATA_BUF_F256_SIZE];
+char g_device_reply_pub[DATA_BUF_F256_SIZE] = { 0 };
+char g_device_request_pub[DATA_BUF_F256_SIZE] = { 0 };
+char g_device_data_pub[DATA_BUF_F256_SIZE] = { 0 };
+char g_container_reply_pub[DATA_BUF_F256_SIZE] = { 0 };
+char g_container_data_pub[DATA_BUF_F256_SIZE] = { 0 };
+char g_app_reply_pub[DATA_BUF_F256_SIZE] = { 0 };
+char g_app_data_pub[DATA_BUF_F256_SIZE] = { 0 };
 
-MQTTClient      g_client = NULL;
-
-
+MQTTClient g_client = NULL;
 volatile MQTTClient_deliveryToken g_deliveredtoken;
 MQTTClient_connectOptions g_conn_opts = MQTTClient_connectOptions_initializer;
 
@@ -47,6 +43,7 @@ int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_mess
 void sg_delivered(void *context, MQTTClient_deliveryToken dt);
 void sg_agent_mqtt_disconnect(void);
 void sg_agent_mqtt_destroy(void);
+int sg_mqtt_msg_subscribe(char* topic, int qos);
 
 int sg_mqtt_main_task()
 {
@@ -83,9 +80,8 @@ void sg_connLost(void *context, char *cause)
     printf("\n cause: %s\n", cause);
     SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "sg_connLost(cause = %s).\n", cause);
     g_mqtt_connect_flag.mqtt_connect_flag = DEVICE_OFFLINE;
-    sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
+    (void)sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
 }
-
 
 int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_message *message)
 {
@@ -115,7 +111,7 @@ int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_mess
             }
             (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
             (void)memcpy_s(item->msg_send, MSG_ARRVD_MAX_LEN, payloadptr, message->payloadlen);
-            size = sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE,"%s", topic);
+            size = sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE,"%s", topic);
             if(size < 0) {
                 (void)VOS_Free(item);
                 MQTTClient_freeMessage(&message);
@@ -130,7 +126,7 @@ int sg_mqtt_msg_arrvd(void *context, char *topic, int topic_len, MQTTClient_mess
     return VOS_OK;
 }
 
-void sg_set_mqtt_connect_flag(int flag)
+void (void)sg_set_mqtt_connect_flag(int flag)
 {
     g_mqtt_connect_flag.mqtt_connect_flag = flag;
     if (g_mqtt_connect_flag.mqtt_connect_flag == DEVICE_OFFLINE) {
@@ -152,7 +148,7 @@ int sg_agent_mqtt_init(char *server_uri, char* client_id)
 {
     int mqtt_ret;
     int ret = VOS_OK;
-    sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
+    (void)sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
 
     if (server_uri == NULL || client_id == NULL) {
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "MQTT Init param failed.\n");
@@ -185,6 +181,7 @@ int sg_agent_mqtt_init(char *server_uri, char* client_id)
     return ret;
 
 }
+
 /* MQTTClient_connect 返回值 0成功
     1拒绝连接，协议版本不支持
     2标识符被拒绝
@@ -195,7 +192,7 @@ int sg_agent_mqtt_connect(void)
 {
     int mqtt_ret = VOS_OK;
     int ret = VOS_OK;
-    sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
+    (void)sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
     if (g_client == NULL) {
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt client id handle invalid).\n");
         return VOS_ERR;
@@ -205,7 +202,7 @@ int sg_agent_mqtt_connect(void)
     mqtt_ret = MQTTClient_connect(g_client, &g_conn_opts);
     if (mqtt_ret != MQTTCLIENT_SUCCESS) {
         SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect failed(ret = %d)).\n", mqtt_ret);
-        sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
+        (void)sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
         return VOS_ERR;
     }
     SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "mqtt connect  success.\n");
@@ -218,7 +215,7 @@ void sg_agent_mqtt_disconnect(void)
     int mqtt_ret;
     if (g_client != NULL) {
         mqtt_ret = MQTTClient_disconnect(g_client, 10000);
-        sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
+        (void)sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
         if (mqtt_ret != MQTTCLIENT_SUCCESS) {
             SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "mqtt disconnect error).\n");
         }
@@ -299,7 +296,7 @@ int sg_mqtt_msg_subscribe(char* topic, int qos)
 int sg_mqtt_init(void)
 {
     int rc = VOS_OK;
-    sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
+    (void)sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
     char server_uri[DATA_BUF_F256_SIZE] = { 0 };
 
     sg_dev_param_info_s param = sg_get_param();
@@ -319,7 +316,7 @@ int sg_mqtt_init(void)
 
     if (sg_agent_mqtt_connect() == VOS_OK) {    // 初始化成功后尝试一次连接
         if (sg_create_sub_topic() == VOS_OK) {
-            sg_set_mqtt_connect_flag(DEVICE_ONLINE);
+            (void)sg_set_mqtt_connect_flag(DEVICE_ONLINE);
         }
     }
     return rc;
@@ -328,8 +325,8 @@ int sg_mqtt_init(void)
 void sg_mqtt_exit(void)
 {
     g_mqtt_connect_flag.mqtt_connect_flag = DEVICE_OFFLINE;
-    sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
-    sg_destroy_sub_topic();
+    (void)sg_set_mqtt_connect_flag(DEVICE_OFFLINE);
+    (void)sg_destroy_sub_topic();
     (void)sg_agent_mqtt_disconnect();
     (void)sg_agent_mqtt_destroy();
 }

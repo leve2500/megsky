@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include <limits.h>
 #include <sys/sysinfo.h>
-#include <sys/time.h>               //系统的
+#include <sys/time.h>
 
 #include "vos_typdef.h"
 #include "vos_errno.h"
@@ -20,212 +20,199 @@
 #include "sgdev_struct.h"
 #include "sgdev_debug.h"
 #include "sgdev_param.h"
-#include "task_link.h"               //自己的
+#include "task_link.h"
 #include "mqtt_json.h"
 #include "mqtt_dev.h"
 
 int edge_reboot_flag = REBOOT_EDGE_RESET;
 
-
-//获取终端名称
+// 获取终端名称
 static int sg_get_devname(char *devName)
 {
     int pos = 0;
-    char Temp_str[DATA_BUF_F64_SIZE];
+    char Temp_str[DATA_BUF_F64_SIZE] = { 0 };
     if (sg_file_common_get(HOSTNAME_FILE, Temp_str) == VOS_OK) {
-        //处理数据
+        // 处理数据
         pos = sg_find(Temp_str, strlen(Temp_str), "\n", 1, 0);
         if (pos > 0) {
             if (sg_str_left(Temp_str, strlen(Temp_str), devName, pos) > 0) {
-                printf("devName in = %s\n", devName);
+                SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "devName in = %s\n", devName);
             } else {
-                printf("sg_str_left error!\n");
+                SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_left error!\n");
                 return VOS_ERR;
             }
         } else {
-            printf("common_get pos error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get pos error!\n");
             return VOS_ERR;
         }
     } else {
-        printf("common_get devName error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get devName error!\n");
         return VOS_ERR;
     }
     return VOS_OK;
 }
 
-//获取终端类型
+// 获取终端类型
 static int sg_get_devtype(char *devType)
 {
     int pos = 0;
-    char Temp_str[1500];
+    char Temp_str[1500] = { 0 };
     if (sg_read_file_get(DEVICE_TYPE_FILE, Temp_str) == VOS_OK) {
         pos = sg_find(Temp_str, strlen(Temp_str), "XXX", 1, 0);
         if (pos > 0) {
             if (sg_str_mid(Temp_str, strlen(Temp_str), pos - 3, devType, 3)) {
-                printf("devType in = %s\n", devType);
+                SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "devType in = %s\n", devType);
             } else {
-                printf("sg_str_mid error!\n");
+                SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid error!\n");
                 return VOS_ERR;
             }
         } else {
-            printf("common_get pos error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get pos error!\n");
             return VOS_ERR;
         }
     } else {
-        printf("common_get devType error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get devType error!\n");
         return VOS_ERR;
     }
     return VOS_OK;
 }
-//获取终端硬件版本号
+// 获取终端硬件版本号
 static int sg_get_hardware_version(char *Version)
 {
     int pos = 0;
-    char Temp_str[DATA_BUF_F64_SIZE];
+    char Temp_str[DATA_BUF_F64_SIZE] = { 0 };
     if (sg_file_common_get(DEVICE_HARDWARE_VERSION, Temp_str) == VOS_OK) {
         pos = sg_find(Temp_str, strlen(Temp_str), "H", 1, 0);
         if (pos > 0) {
             if (sg_str_mid(Temp_str, strlen(Temp_str), pos, Version, 7)) {
-                printf("Version in = %s\n", Version);
+                SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "Version in = %s\n", Version);
             } else {
-                printf("sg_str_mid error!\n");
+                SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid error!\n");
                 return VOS_ERR;
             }
         } else {
-            printf("common_get pos error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get pos error!\n");
             return VOS_ERR;
         }
     } else {
-        printf("common_get Version error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get Version error!\n");
         return VOS_ERR;
     }
     return VOS_OK;
 }
 
-//获取设备信息字段
+// 获取设备信息字段
 int sg_get_dev_devinfo(dev_info_s *info)
 {
     int pos = 0;
     char Temp_str[DATA_BUF_F64_SIZE];
     if (info == NULL) {
-        printf("\nsg_get_dev_devinfo :info is NULL.\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "\nsg_get_dev_devinfo :info is NULL.\n");
         return VOS_ERR;
     }
-    if (sg_get_devname(info->devName) == VOS_OK) {                              //获取终端名称
-        printf("devName out = %s\n", info->devName);
-        ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "syslog_info->devName = %s\n", info->devName);
+    if (sg_get_devname(info->devName) == VOS_OK) {                              // 获取终端名称
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "devName out = %s\n", info->devName);
     } else {
-        printf("get_devName error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get_devName error!\n");
         return VOS_ERR;
     }
-    if (sg_get_devtype(info->devType) == VOS_OK) {                              //获取终端类型 终端ID前三个字节
-        printf("devType out = %s\n", info->devType);
-        ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "syslog_info->devType = %s\n", info->devType);
+    if (sg_get_devtype(info->devType) == VOS_OK) {                              // 获取终端类型 终端ID前三个字节
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "devType out = %s\n", info->devType);
     } else {
-        printf("get_devType error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get_devType error!\n");
         return VOS_ERR;
     }
-    if (sg_file_common_get(VENDOR_FILE, info->mfgInfo) == VOS_OK) {              //获取终端厂商信息
-        printf("info->mfgInfo = %s \n", info->mfgInfo);
-        ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "syslog_info->mfgInfo = %s\n", info->mfgInfo);
+    if (sg_file_common_get(VENDOR_FILE, info->mfgInfo) == VOS_OK) {              // 获取终端厂商信息
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "info->mfgInfo = %s \n", info->mfgInfo);
     } else {
-        printf("common_get mfgInfo error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get mfgInfo error!\n");
         return VOS_ERR;
     }
-    sprintf_s(info->devStatus, DATA_BUF_F64_SIZE, "%s", "online");                     //获取终端状态 ??
-    ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "syslog_info->devStatus = %s\n", info->devStatus);
-
-    if (sg_get_hardware_version(info->hardVersion) == VOS_OK) {                 //获取终端硬件版本号
-        printf("Version out = %s\n", info->hardVersion);
-        ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "syslog_info->hardVersion = %s\n", info->hardVersion);
+    if (sprintf_s(info->devStatus, DATA_BUF_F64_SIZE, "%s", "online") < 0) {     // 获取终端状态
+        return VOS_ERR;
+    }
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "syslog_info->devStatus = %s\n", info->devStatus);
+    if (sg_get_hardware_version(info->hardVersion) == VOS_OK) {                 // 获取终端硬件版本号
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "Version out = %s\n", info->hardVersion);
     } else {
-        printf("get_Version error!\n");
-        memcpy(info->hardVersion, "HV01.01", strlen("HV01.01"));                //如果没有就默认为"HV01.01"
-        printf("Version out = %s\n", info->hardVersion);
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get_Version error!\n");
+        memcpy_s(info->hardVersion, DATA_BUF_F64_SIZE, "HV01.01", strlen("HV01.01")); // 如果没有就默认为"HV01.01"
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Version out = %s\n", info->hardVersion);
         return VOS_ERR;
     }
     return VOS_OK;
 }
 
-
 int sg_get_cpu_devinfo(cpu_info_s *info)
 {
-    FILE *fp;
+    FILE *fp = NULL;
     int ret = VOS_OK;
-    char buf[DEV_INFO_MSG_BUFFER_LEN] = { 0 };
-    char dstbuf[DEV_INFO_MSG_BUFFER_LEN] = { 0 };
     int frequency = 1000;
     int dstbuflen = 0;
-    struct sysinfo si;
-    cpuusage_s output_value = { 0 };
-    char errmsg[DATA_BUF_F256_SIZE] = { 0 };
-    //cpu核数
-    info->cpus = sysconf(_SC_NPROCESSORS_ONLN);
-    //cpu主频
-    if ((fp = fopen(CPU_FREQUENCY_PATH, "r")) == NULL) {
-        printf("\nfile open cpu devinfo failed.\n");
+    char errmsg[DATA_BUF_F256_SIZE]      = { 0 };
+    char buf[DEV_INFO_MSG_BUFFER_LEN]    = { 0 };
+    char dstbuf[DEV_INFO_MSG_BUFFER_LEN] = { 0 };
+    struct sysinfo si                    = { 0 };
+    cpuusage_s output_value              = { 0 };
+
+    info->cpus = sysconf(_SC_NPROCESSORS_ONLN);             // cpu核数
+    if ((fp = fopen(CPU_FREQUENCY_PATH, "r")) == NULL) {    // cpu主频
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "\nfile open cpu devinfo failed.\n");
         return VOS_ERR;
     }
-    while (!feof(fp))
-    {
+    while (!feof(fp)) {
         fgets(buf, DEV_INFO_MSG_BUFFER_LEN, fp);
     }
-    fclose(fp);
+    (void)fclose(fp);
     dstbuflen = sg_str_right(buf, strlen(buf), dstbuf, strlen(buf) - strlen("cpu MHz :"));
     if (dstbuflen > 0) {
         frequency = atoi(dstbuf);
     }
     info->frequency = frequency / 1024.0;
-    //cpu缓存
     sysinfo(&si);
-    info->cache = si.bufferram / (1024 * 1024);
-    //cpu告警阈值
-    if (sysman_rpc_transport_open() == VOS_OK) {
+    info->cache = si.bufferram / (1024 * 1024);             // cpu缓存
+    if (sysman_rpc_transport_open() == VOS_OK) {            // cpu告警阈值
         ret = cpuusage_status_call_get_threshold(&output_value, errmsg, DATA_BUF_F256_SIZE);
     }
     sysman_rpc_transport_close();
     if (ret == VOS_OK) {
-        info->cpuLmt = output_value.warning;    // 告警阈值取 output_value.warning，告警阈值恢复取 output_value.warning - 10
+        info->cpuLmt = output_value.warning;  // 告警阈值取 output_value.warning，告警阈值恢复取 output_value.warning - 10
     }
-    //cpu架构
-    if (sg_cmd_common_get("uname -m", info->arch) == VOS_OK) {
+    if (sg_cmd_common_get("uname -m", info->arch) == VOS_OK) { // cpu架构
         return VOS_OK;
     }
     return ret;
 }
+
 int sg_get_mem_devinfo(mem_info_s *info)
 {
     int ret = VOS_OK;
-    struct sysinfo si;
-    memoryusage_s output_value = { 0 };
+    struct sysinfo si               = { 0 };
+    memoryusage_s output_value      = { 0 };
     char errmsg[DATA_BUF_F256_SIZE] = { 0 };
-    //虚拟内存，以M为单位 
-    info->virt = sg_memvirt_total();
-    //物理内存，以M为单位
+    info->virt = sg_memvirt_total();             // 虚拟内存，以M为单位
     sysinfo(&si);
-    info->phy = si.totalram / (1024 * 1024);
-
-    //内存监控阈值，例如50表示50% 
-    if (sysman_rpc_transport_open() == VOS_OK) {
+    info->phy = si.totalram / (1024 * 1024);     // 物理内存，以M为单位
+    if (sysman_rpc_transport_open() == VOS_OK) { // 内存监控阈值，例如50表示50% 
         ret = memoryusage_status_call_get_threshold(&output_value, errmsg, DATA_BUF_F256_SIZE);
     }
     sysman_rpc_transport_close();
-
     info->memLmt = output_value.warning;
     return ret;
 }
+
 int sg_get_disk_devinfo(disk_info_s *info)
 {
     int ret = VOS_OK;
     int pos = 0;
-    char buf[DATA_BUF_F256_SIZE] = { 0 };
-    char dstbuf[DATA_BUF_F256_SIZE] = { 0 };
-    storageusage_s* output_value = NULL;
-    char errmsg[DATA_BUF_F256_SIZE] = { 0 };
-    uint32_t infoNum = 0;
     int freeRet = 0;
+    uint32_t infoNum = 0;
+    char buf[DATA_BUF_F256_SIZE]    = { 0 };
+    char dstbuf[DATA_BUF_F256_SIZE] = { 0 };
+    char errmsg[DATA_BUF_F256_SIZE] = { 0 };
+    storageusage_s* output_value    = NULL;
 
-    if (sg_file_common_get(STORAGE_SIZE_FILE, buf) == VOS_OK) {    // #define STORAGE_SIZE_FILE "/etc/devinfo/storage-size"
+    if (sg_file_common_get(STORAGE_SIZE_FILE, buf) == VOS_OK) { // #define STORAGE_SIZE_FILE "/etc/devinfo/storage-size"
         pos = sg_find(buf, strlen(buf), " M", 1, 0);
         if (pos > 0) {
             if (sg_str_left(buf, strlen(buf), dstbuf, pos) > 0) {
@@ -247,42 +234,44 @@ int sg_get_disk_devinfo(disk_info_s *info)
     if (output_value != NULL) {
         freeRet = VOS_Free(output_value);
         if (freeRet != VOS_OK) {
-            printf("\n output_value fail");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "\n output_value fail");
         }
     }
     info->diskLmt = output_value[0].warning;
     return ret;
 }
-int sg_get_os_devinfo(os_info_s *info)    //2020.12.15 检查：需要完善
+int sg_get_os_devinfo(os_info_s *info)    // 2020.12.15 检查：需要完善
 {
-    // char            distro[DATA_BUF_F64_SIZE];        //操作系统的名称，如"Ubuntu""Redhat"
-    // char            version[DATA_BUF_F64_SIZE];       //操作系统版本，如"18.10"
-    // char            kernel[DATA_BUF_F64_SIZE];        //操作系统内核，如"3.10-17"
-    // char            softVersion[DATA_BUF_F64_SIZE];   //平台软件组件版本，如"V01.024"
-    // char            patchVersion[DATA_BUF_F64_SIZE];  //平台软件组件补丁版本，如"PV01.0001"
-
     char buf[DATA_BUF_F256_SIZE] = { 0 };
 
     if (sg_cmd_common_get("uname -s", info->distro) != VOS_OK) {
-        printf("megsky test uname -s fail \n ");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "megsky test uname -s fail \n");
     }
     if (sg_cmd_common_get("uname -v", info->version) != VOS_OK) {
-        printf("megsky test uname -v fail \n ");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "megsky test uname -v fail \n");
     }
     if (sg_cmd_common_get("uname -r", info->kernel) != VOS_OK) {
-        printf("megsky test uname -r fail \n ");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "megsky test uname -r fail \n");
     }
     if (sg_file_common_get(CUSTOM_SOFTWARE_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->softVersion, DATA_BUF_F256_SIZE, "%s", buf);
+        if (sprintf_s(info->softVersion, DATA_BUF_F256_SIZE, "%s", buf) < 0) {
+            return VOS_ERR;
+        }
     } else if (sg_file_common_get(SOFTWARE_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->softVersion, DATA_BUF_F256_SIZE, "%s", buf);
+        if (sprintf_s(info->softVersion, DATA_BUF_F256_SIZE, "%s", buf) < 0) {
+            return VOS_ERR;
+        }
     } else {
         return VOS_ERR;
     }
     if (sg_file_common_get(CUSTOM_PATCH_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->patchVersion, DATA_BUF_F256_SIZE, "%s", buf);
+        if (sprintf_s(info->patchVersion, DATA_BUF_F256_SIZE, "%s", buf) < 0) {
+            return VOS_ERR;
+        }
     } else if (sg_file_common_get(PATCH_VERSION_FILE, buf) == VOS_OK) {
-        sprintf_s(info->patchVersion, DATA_BUF_F256_SIZE, "%s", buf);
+        if (sprintf_s(info->patchVersion, DATA_BUF_F256_SIZE, "%s", buf) < 0) {
+            return VOS_ERR;
+        }
     } else {
         return VOS_ERR;
     }
@@ -295,7 +284,7 @@ static gint links_comp(gconstpointer a, gconstpointer b)
     ifm_link_info_t *ifm_link_info2 = *(ifm_link_info_t **)b;
     return (gint)(ifm_link_info1->if_index - ifm_link_info2->if_index);
 }
-//获取网络连接信息  获取type  id  name  mac
+// 获取网络连接信息  获取type  id  name  mac
 int sgcc_get_links_info(link_info_s **links_info_out, int *links_num)
 {
     int i = 0;
@@ -318,26 +307,23 @@ int sgcc_get_links_info(link_info_s **links_info_out, int *links_num)
     }
     g_ptr_array_set_free_func(ret_entry, g_object_unref);
 
-    //获取
     bool rpc_call_return = ifm_status_if_get_link_info(ifm_status_client, &ret_entry, "",
-        IF_SHOW_INFO_E_IFM_NO_DEV_AND_UP, &error);
+        IF_SHOW_INFO_E_IFM_NO_DEV_AND_UP, &error);            // 获取
     free_rpc_client(ifm_status_client);
     if (rpc_call_return == false) {
         g_ptr_array_unref(ret_entry);
         return -1;
     }
-    //排序
-    g_ptr_array_sort(ret_entry, (GCompareFunc)links_comp);
+    g_ptr_array_sort(ret_entry, (GCompareFunc)links_comp);    // 排序
 
     links = (link_info_s *)VOS_Malloc(MID_SGDEV, sizeof(link_info_s) * ret_entry->len);
     if (links == NULL) {
-        fprintf(stderr, "Error - unable to allocate required memory\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, stderr, "Error - unable to allocate required memory\n");
         return VOS_ERR;
     }
     (void)memset_s(links, sizeof(link_info_s) * ret_entry->len, 0, sizeof(link_info_s) * ret_entry->len);
 
-    //解析
-    for (i = 0; i < ret_entry->len; i++) {
+    for (i = 0; i < ret_entry->len; i++) {                    // 解析
         ifm_link_info = (ifm_link_info_t *)g_ptr_array_index(ret_entry, i);
         if (ifm_link_info->if_index < 0 || ifm_link_info->mtu == 0) {
             continue;
@@ -353,31 +339,28 @@ int sgcc_get_links_info(link_info_s **links_info_out, int *links_num)
             strcmp(ifm_link_info->name, "br_docker0") == 0) {
             continue;
         }
-        //type
         if (sprintf_s(links[num].type, DATA_BUF_F32_SIZE, "%s", ifm_link_info->type) < 0) {
             goto error_end;
         }
-        //id
         if (sprintf_s(links[num].id, DATA_BUF_F32_SIZE, "%d", ifm_link_info->if_index) < 0) {
             goto error_end;
         }
-        //name
         if (strncmp(ifm_link_info->vlan_master, "NO", strlen(ifm_link_info->vlan_master)) != 0) {
-            ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s@%s", ifm_link_info->name, ifm_link_info->vlan_master);
+            ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s@%s",
+                ifm_link_info->name, ifm_link_info->vlan_master);
         } else {
             ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s", ifm_link_info->name);
         }
         if (ret_spr < 0) {
             goto error_end;
         }
-        //mac
         if (sprintf_s(links[num].mac, DATA_BUF_F32_SIZE, "%s", ifm_link_info->mac_addr) < 0) {
             goto error_end;
         }
-        printf("\n****links_in[%d].type = %s\n", num, links[num].type);
-        printf("****links_in[%d].name = %s\n", num, links[num].name);
-        printf("****links_in[%d].id = %s\n", num, links[num].id);
-        printf("****links_in[%d].mac = %s\n", num, links[num].mac);
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "\n****links_in[%d].type = %s\n", num, links[num].type);
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "****links_in[%d].name = %s\n", num, links[num].name);
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "****links_in[%d].id = %s\n", num, links[num].id);
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "****links_in[%d].mac = %s\n", num, links[num].mac);
         num++;
     }
     *links_num = num;
@@ -387,8 +370,8 @@ error_end:
     return VOS_OK;
 }
 
-//获取网络连接信息2  获取name  status
-int sgcc_get_links_info2(link_dev_info_s **links_info_out, int *links_num)
+// 获取网络连接信息  获取name  status
+int sgcc_get_links_status(link_dev_info_s **links_info_out, int *links_num)
 {
     int i = 0;
     int num = 0;
@@ -410,26 +393,23 @@ int sgcc_get_links_info2(link_dev_info_s **links_info_out, int *links_num)
     }
     g_ptr_array_set_free_func(ret_entry, g_object_unref);
 
-    //获取
     bool rpc_call_return = ifm_status_if_get_link_info(ifm_status_client, &ret_entry, "",
-        IF_SHOW_INFO_E_IFM_NO_DEV_AND_UP, &error);
+        IF_SHOW_INFO_E_IFM_NO_DEV_AND_UP, &error);            // 获取
     free_rpc_client(ifm_status_client);
     if (rpc_call_return == false) {
         g_ptr_array_unref(ret_entry);
         return -1;
     }
-    //排序
-    g_ptr_array_sort(ret_entry, (GCompareFunc)links_comp);
+    g_ptr_array_sort(ret_entry, (GCompareFunc)links_comp);    // 排序
 
     links = (link_dev_info_s *)VOS_Malloc(MID_SGDEV, sizeof(link_dev_info_s) * ret_entry->len);
     if (links == NULL) {
-        fprintf(stderr, "Error - unable to allocate required memory\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Error - unable to allocate required memory\n");
         return VOS_ERR;
     }
     (void)memset_s(links, sizeof(link_dev_info_s) * ret_entry->len, 0, sizeof(link_dev_info_s) * ret_entry->len);
 
-    //解析
-    for (i = 0; i < ret_entry->len; i++) {
+    for (i = 0; i < ret_entry->len; i++) {                   // 解析
         ifm_link_info = (ifm_link_info_t *)g_ptr_array_index(ret_entry, i);
         if (ifm_link_info->if_index < 0 || ifm_link_info->mtu == 0) {
             continue;
@@ -445,7 +425,6 @@ int sgcc_get_links_info2(link_dev_info_s **links_info_out, int *links_num)
             strcmp(ifm_link_info->name, "br_docker0") == 0) {
             continue;
         }
-        //name
         if (strncmp(ifm_link_info->vlan_master, "NO", strlen(ifm_link_info->vlan_master)) != 0) {
             ret_spr = sprintf_s(links[num].name, DATA_BUF_F32_SIZE, "%s@%s", ifm_link_info->name, ifm_link_info->vlan_master);
         } else {
@@ -454,7 +433,6 @@ int sgcc_get_links_info2(link_dev_info_s **links_info_out, int *links_num)
         if (ret_spr < 0) {
             goto error_end;
         }
-        //status
         if ((strncmp(ifm_link_info->name, "plc", strlen("plc")) == 0 ||
             strncmp(ifm_link_info->name, "rf", strlen("rf")) == 0) &&
             strncmp(ifm_link_info->oper_status, "unknown", strlen(ifm_link_info->oper_status)) == 0) {
@@ -474,45 +452,49 @@ error_end:
     g_ptr_array_unref(ret_entry);
     return VOS_OK;
 }
-
-int sg_get_dev_insert_info(dev_acc_req_s *devinfo)  //获取设备接入信息
+// 获取设备接入信息
+int sg_get_dev_insert_info(dev_acc_req_s *devinfo)
 {
     int ret = VOS_OK;
     if (sg_get_dev_devinfo(&devinfo->dev) == VOS_ERR) {
         ret = VOS_ERR;
-        printf("get device infomation fail. \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get device infomation fail. \n");
     }
     if (sg_get_cpu_devinfo(&devinfo->cpu) == VOS_ERR) {
         ret = VOS_ERR;
-        printf("get cpu infomation fail. \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get cpu infomation fail. \n");
     }
     if (sg_get_mem_devinfo(&devinfo->mem) == VOS_ERR) {
         ret = VOS_ERR;
-        printf("get memory infomation fail. \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get memory infomation fail. \n");
     }
     if (sg_get_disk_devinfo(&devinfo->disk) == VOS_ERR) {
         ret = VOS_ERR;
-        printf("get disk infomation fail. \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get disk infomation fail. \n");
     }
     if (sg_get_os_devinfo(&devinfo->os) == VOS_ERR) {
         ret = VOS_ERR;
-        printf("get os infomation fail. \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get os infomation fail. \n");
     }
     if (sgcc_get_links_info(&devinfo->links, &devinfo->link_len) == VOS_ERR) {
         ret = VOS_ERR;
-        printf("get links infomation fail. \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "get links infomation fail. \n");
     }
     return ret;
 }
 
-int sg_down_update_host(device_upgrade_s cmdobj, char *errormsg)
+int sg_down_update_host(device_upgrade_s cmd_obj, char *errormsg)
 {
     int ret = VOS_OK;
-    char errmsg[DATA_BUF_F256_SIZE];
-    char filepath[DATA_BUF_F256_SIZE];
-    char signature[DATA_BUF_F256_SIZE];
-    sprintf(filepath, "/mnt/internal/internal_storage/%s", cmdobj.file.name);
-    sprintf(signature, "/mnt/internal/internal_storage/%s", cmdobj.file.sign.name);
+    char errmsg[DATA_BUF_F256_SIZE]    = { 0 };
+    char filepath[DATA_BUF_F256_SIZE]  = { 0 };
+    char signature[DATA_BUF_F256_SIZE] = { 0 };
+    if (sprintf_s(filepath, DATA_BUF_F256_SIZE, "/mnt/internal/internal_storage/%s", cmd_obj.file.name) < 0) {
+        ret = VOS_ERR;
+    }
+    if (sprintf_s(signature, DATA_BUF_F256_SIZE, "/mnt/internal/internal_storage/%s", cmd_obj.file.sign.name) < 0) {
+        ret = VOS_ERR;
+    }
     if (sysman_rpc_transport_open() == VOS_OK) {
         ret = software_management_action_call_load_software(filepath, signature, errmsg, DATA_BUF_F256_SIZE);
         sysman_rpc_transport_close();
@@ -522,24 +504,23 @@ int sg_down_update_host(device_upgrade_s cmdobj, char *errormsg)
     }
     return ret;
 }
-int sg_down_update_patch(device_upgrade_s cmdobj, char *errormsg)
+int sg_down_update_patch(device_upgrade_s cmd_obj, char *errormsg)
 {
     int ret = VOS_OK;
-    char errmsg[DATA_BUF_F256_SIZE];
+    char errmsg[DATA_BUF_F256_SIZE] = { 0 };
 
-    //ret = software_management_action_call_install_patch(const char* filepath, const char* signature, bool force_flag, char* errmsg, size_t msglen);
+    // ret = software_management_action_call_install_patch(const char* filepath, const char* signature, bool force_flag, char* errmsg, size_t msglen);
 
     return ret;
 }
 
-//获取设备最近一次启动时间
+// 获取设备最近一次启动时间
 int sg_get_devstdatetime(char *timeBuf, long *timenum)
 {
-    struct sysinfo Information;
-    //Information.uptime		            //表示的是设备运行时长
     time_t cur_time = 0;
     time_t boot_time = 0;
-    struct tm format_time = { 0 };
+    struct tm format_time       = { 0 };
+    struct sysinfo Information  = { 0 };
     if (sysinfo(&Information)) {
         return VOS_ERR;
     }
@@ -550,92 +531,63 @@ int sg_get_devstdatetime(char *timeBuf, long *timenum)
     } else {
         boot_time = Information.uptime - cur_time;
     }
-    if (gmtime_r(&boot_time, &format_time) == NULL) {   //UTC时间 
+    if (gmtime_r(&boot_time, &format_time) == NULL) {   // UTC时间 
         return VOS_ERR;
     }
     (void)strftime(timeBuf, 32, "%Y-%m-%d,%T,%Z", &format_time);
 }
 
-//获取虚拟内存的使用总量
+// 获取虚拟内存的使用总量
 uint32_t sg_memvirt_total(void)
 {
-    char temp_str[DEV_INFO_MSG_BUFFER_LEN];
-    uint32_t total = 0;
-    char buf[DEV_INFO_MSG_BUFFER_LEN];
     FILE * p_file = NULL;
+    uint32_t total = 0;
+    char buf[DEV_INFO_MSG_BUFFER_LEN]      = { 0 };
+    char temp_str[DEV_INFO_MSG_BUFFER_LEN] = { 0 };
+
     p_file = popen("free |grep Swap|awk '{print $2}'", "r");
     if (!p_file) {
-        printf("Erro to popen \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Erro to popen \n");
     }
     while (fgets(buf, DEV_INFO_MSG_BUFFER_LEN, p_file) != NULL) {
-        sprintf(temp_str, "%s", buf);
+        if (sprintf_s(temp_str, DEV_INFO_MSG_BUFFER_LEN, "%s", buf) < 0) {
+            return;
+        }
     }
-    sscanf(temp_str, "%d", &total);	//将字符串转为整数
-    pclose(p_file);
+    sscanf(temp_str, "%d", &total); // 将字符串转为整数
+    (void)pclose(p_file);
     return total;
 }
-//获取虚拟内存的当前使用率
+// 获取虚拟内存的当前使用率
 uint8_t sg_memvirt_used(void)
 {
+    sFILE * p_file = NULL;
     float usagerate = 0.0;
     uint8_t ret_value = 0;
-    char temp_str[DEV_INFO_MSG_BUFFER_LEN];
     uint32_t used = 0;
-    char buf[DEV_INFO_MSG_BUFFER_LEN];
-    FILE * p_file = NULL;
-    p_file = popen("free |grep Swap|awk '{print $3}'", "r");  //获取虚拟内存的使用量
+    char buf[DEV_INFO_MSG_BUFFER_LEN]      = { 0 };
+    char temp_str[DEV_INFO_MSG_BUFFER_LEN] = { 0 };
+
+    p_file = popen("free |grep Swap|awk '{print $3}'", "r");  // 获取虚拟内存的使用量
     if (!p_file) {
-        printf("Erro to popen \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Erro to popen \n");
     }
     while (fgets(buf, DEV_INFO_MSG_BUFFER_LEN, p_file) != NULL) {
-        sprintf(temp_str, "%s", buf);
+        if (sprintf_s(temp_str, DEV_INFO_MSG_BUFFER_LEN, "%s", buf) < 0) {
+            return;
+        }
     }
-    sscanf(temp_str, "%d", &used);	//将字符串转为整数
-    pclose(p_file);
-    printf("used = %d\n", used);
-    printf("sg_memvirt_total = %d\n", sg_memvirt_total());
+    sscanf(temp_str, "%d", &used); // 将字符串转为整数
+    (void)pclose(p_file);
+    SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "used = %d\n", used);
+    SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_memvirt_total = %d\n", sg_memvirt_total());
     if (sg_memvirt_total() == 0) {
         ret_value = 0;
     } else {
-        usagerate = (float)used / sg_memvirt_total();   			//获取百分数 
+        usagerate = (float)used / sg_memvirt_total();       // 获取百分数 
         ret_value = (uint8_t)(usagerate * 100);
     }
     return ret_value;
-}
-
-void sg_getdevinf(void)			//获取其他设备信息？？？？		
-{
-    float usagerate;
-    char temp_str[DEV_INFO_MSG_BUFFER_LEN];
-    uint32_t used = 0;
-    char buf[1024];
-    FILE * p_file = NULL;
-    p_file = popen("ip link", "r");  //获取虚拟内存的使用量
-    if (!p_file) {
-        printf("Erro to popen \n");
-    }
-    while (fgets(buf, DEV_INFO_MSG_BUFFER_LEN, p_file) != NULL) {
-        sprintf(temp_str, "%s", buf);
-        printf("aaaa=%s\n", buf);
-    }
-    printf("sss=%s\n", temp_str);
-    // sscanf(temp_str,"%d",&used);	//将字符串转为整数
-    pclose(p_file);
-}
-
-//获取设备名称
-void sg_getdevname(char *devname)
-{
-    char buf[DEV_INFO_MSG_BUFFER_LEN];
-    FILE * p_file = NULL;
-    p_file = popen("hostname", "r");  //获取虚拟内存的使用量
-    if (!p_file) {
-        printf("Erro to popen \n");
-    }
-    while (fgets(buf, DEV_INFO_MSG_BUFFER_LEN, p_file) != NULL) {
-        sprintf(devname, "%s", buf);
-    }
-    pclose(p_file);
 }
 
 /******************************************************************
@@ -650,9 +602,9 @@ int sg_get_devusage_threshold(int *threshold, uint8_t select)
 {
     int ret = VOS_OK;
     uint32_t infoNum = 0;
-    cpuusage_s cpu_value = { 0 };
-    memoryusage_s mem_value = { 0 };
-    storageusage_s *storage_value = NULL;
+    storageusage_s *storage_value      = NULL;
+    cpuusage_s cpu_value               = { 0 };
+    memoryusage_s mem_value            = { 0 };
     char errmsg[SYSMAN_RPC_ERRMSG_MAX] = { 0 };
     ret = sysman_rpc_transport_open();
     if (ret == VOS_OK) {
@@ -665,28 +617,27 @@ int sg_get_devusage_threshold(int *threshold, uint8_t select)
             ret = storageusage_status_call_get_threshold(&infoNum, storage_value, errmsg, SYSMAN_RPC_ERRMSG_MAX);
         }
     } else {
-        printf("rpc open error! \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "rpc open error!\n");
         return VOS_ERR;
     }
     sysman_rpc_transport_close();
-    // 告警阈值取 output_value.warning，告警阈值恢复取 output_value.warning - 10
     if (select == CPU_USAGE) {
         *threshold = cpu_value.alert;
     } else if (select == MEM_USAGE) {
         *threshold = mem_value.alert;
     } else if (select == STORAGE_USAGE) {
         *threshold = storage_value[0].alert;
-        VOS_Free(storage_value);
+        (void)VOS_Free(storage_value);
     }
     return ret;
 }
 
 
-//重新创建定时器
+// 重新创建定时器
 int sg_creat_timer(rep_period_s *paraobj)
 {
     int nRet = VOS_OK;
-    //注册定时器
+    // 注册定时器
     nRet = sg_timer_heart_create(paraobj->heartPeriod);
     if (nRet != VOS_OK) {
         return nRet;
@@ -705,18 +656,18 @@ int sg_creat_timer(rep_period_s *paraobj)
     }
     return nRet;
 }
-//时间间隔设置
+// 时间间隔设置
 void sg_set_period(rep_period_s *paraobj)
 {
-    sg_write_period_file(paraobj);					//周期文件存储
-    if (sg_creat_timer(paraobj) == VOS_OK) {	//重新创建定时器
-        printf("********Creat timer success !************** \n");
+    sg_write_period_file(paraobj);              // 周期文件存储
+    if (sg_creat_timer(paraobj) == VOS_OK) {    // 重新创建定时器
+        SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "********Creat timer success !**************\n");
     } else {
-        printf("creat timer error! \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "creat timer error!\n");
     }
 }
 
-//读周期参数文件
+// 读周期参数文件
 int sg_read_period_file(sg_period_info_s *m_devperiod)
 {
     int filesize = 0;
@@ -732,7 +683,7 @@ int sg_read_period_file(sg_period_info_s *m_devperiod)
 
     buf = (char *)VOS_Malloc(MID_SGDEV, filesize + 1);
     if (buf == NULL) {
-        fprintf(stderr, "Error - unable to allocate required memory\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Error - unable to allocate required memory\n");
         return VOS_ERR;
     }
     (void)memset_s(buf, filesize + 1, 0, filesize + 1);
@@ -743,24 +694,24 @@ int sg_read_period_file(sg_period_info_s *m_devperiod)
 
     fp = fopen(real_path, "r");
     if (fp == NULL) {
-        (void)printf("Failed to open the file!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Failed to open the file!\n");
         (void)VOS_Free(buf);
         return VOS_ERR;
     }
 
     if (!fread(buf, filesize, 1, fp)) {
-        (void)printf("read file error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read file error!\n");
         (void)fclose(fp);
         (void)VOS_Free(buf);
         return VOS_ERR;
     }
 
-    piload = load_json(buf);		//将字符串转为json
-    printf("period_buf = %s\n", buf);
+    piload = load_json(buf);        // 将字符串转为json
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "period_buf = %s\n", buf);
     (void)VOS_Free(buf);
 
     if (!json_is_object(piload)) {
-        printf("%s,%d\n", __FILE__, __LINE__);
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "%s,%d\n", __FILE__, __LINE__);
     }
     if (json_into_uint32_t(&m_devperiod->appperiod, piload, "appperiod") != VOS_OK) {
         (void)json_decref(piload);
@@ -783,7 +734,7 @@ int sg_read_period_file(sg_period_info_s *m_devperiod)
     return VOS_OK;
 }
 
-//获取温度监控阈值的方法
+// 获取温度监控阈值的方法
 int sg_get_monitor_temperature_threshold(temp_info_s *temp_info_out)
 {
     int ret = VOS_OK;
@@ -791,30 +742,29 @@ int sg_get_monitor_temperature_threshold(temp_info_s *temp_info_out)
     uint32_t num = 0;
     char errmsg[SYSMAN_RPC_ERRMSG_MAX] = { 0 };
     temperature_threshold_status_s *temp_threshold_get = NULL;
-    //获取高低温阈值
-    temp_threshold_get = (temperature_threshold_status_s*)VOS_Malloc(MID_SGDEV, sizeof(temperature_threshold_status_s) *
+    temp_threshold_get = (temperature_threshold_status_s*)VOS_Malloc(MID_SGDEV, sizeof(temperature_threshold_status_s) *    // 获取高低温阈值
         MONITOR_TEMP_NUM);
     (void)memset_s(temp_threshold_get, MONITOR_TEMP_NUM * sizeof(temperature_threshold_status_s), 0, MONITOR_TEMP_NUM *
         sizeof(temperature_threshold_status_s));
 
     if (sysman_rpc_transport_open() != VOS_OK) {
-        printf("sysman rpc open error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sysman rpc open error!\n");
         return VOS_ERR;
     }
-    ret = temperature_status_call_get_monitor_threshold(&infoNum, temp_threshold_get, errmsg, SYSMAN_RPC_ERRMSG_MAX);  //有返回值
+    ret = temperature_status_call_get_monitor_threshold(&infoNum, temp_threshold_get, errmsg, SYSMAN_RPC_ERRMSG_MAX);
     sysman_rpc_transport_close();
-    for (num = 0; num < infoNum; num++) {   //这里需要进行"Main_board"对比获取
+    for (num = 0; num < infoNum; num++) {   // 这里需要进行"Main_board"对比获取
         if (0 == strncmp(temp_threshold_get[num].moduleName, TEMPERATURE_MODULE_NAME_MAINBOARD,
             strlen(TEMPERATURE_MODULE_NAME_MAINBOARD))) {
-            printf("gettemLow = %d\n", temp_threshold_get[num].temLow);
-            printf("gettemHigh = %d\n", temp_threshold_get[num].temHigh);
-            printf("gettemVal = %d\n", temp_threshold_get[num].temVal);
             temp_info_out->temLow = temp_threshold_get[num].temLow;
             temp_info_out->temHigh = temp_threshold_get[num].temHigh;
 
-            printf("temp_info_out->temLow = %d\n", temp_info_out->temLow);
-            printf("temp_info_out->temHigh = %d\n", temp_info_out->temHigh);
-            //           break;  判断一下应该放在哪儿
+            SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "get_temLow = %d\n", temp_threshold_get[num].temLow);
+            SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "get_temHigh = %d\n", temp_threshold_get[num].temHigh);
+            SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "get_temVal = %d\n", temp_threshold_get[num].temVal);
+            SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "temp_info_out->temLow = %d\n", temp_info_out->temLow);
+            SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "temp_info_out->temHigh = %d\n", temp_info_out->temHigh);
+            break;
         }
     }
     (void)VOS_Free(temp_threshold_get);
@@ -824,85 +774,84 @@ int sg_get_monitor_temperature_threshold(temp_info_s *temp_info_out)
 int sg_get_device_temperature_threshold(dev_sta_reply_s *dev_sta_reply)
 {
     int ret = VOS_OK;
-    uint32_t infoNum = 0;
     uint32_t num = 0;
+    uint32_t infoNum = 0;
     char errmsg[SYSMAN_RPC_ERRMSG_MAX] = { 0 };
-    temperature_s *tempoutput_value = NULL;
+    temperature_s *tempoutput_value    = NULL;
 
     tempoutput_value = (temperature_s*)VOS_Malloc(MID_SGDEV, sizeof(temperature_s) * MONITOR_TEMP_NUM);
-
     (void)memset_s(tempoutput_value, MONITOR_TEMP_NUM * sizeof(temperature_s), 0, sizeof(temperature_s) *
         MONITOR_TEMP_NUM);
     if (sysman_rpc_transport_open() != VOS_OK) {
-        printf("sysman_rpc_transport_open error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sysman_rpc_transport_open error!\n");
         ret = VOS_ERR;
     }
     ret = temperature_status_call_get_device_temperature(&infoNum, tempoutput_value, errmsg, SYSMAN_RPC_ERRMSG_MAX);
     sysman_rpc_transport_close();
     if (ret != VOS_OK) {
-        printf("temperature_status_call_get_device_temperature error! \n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "temperature_status_call_get_device_temperature error! \n");
         ret = VOS_ERR;
     }
     for (num = 0; num < infoNum; num++) {
         if (0 == strncmp(tempoutput_value[num].name, TEMPERATURE_MODULE_NAME_MAINBOARD,
             strlen(TEMPERATURE_MODULE_NAME_MAINBOARD))) {
             dev_sta_reply->tempValue = tempoutput_value[num].temperature;
-            printf("tempoutput_value[%d].temperature = %d \n", num, tempoutput_value[num].temperature);
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "tempoutput_value[%d].temperature = %d \n", 
+                num, tempoutput_value[num].temperature);
             break;
         }
     }
-    VOS_Free(tempoutput_value);
+    (void)VOS_Free(tempoutput_value);
     return ret;
 }
 
-
-//获取时间信息 将XXXX-XX-XX XX:XX:XX时间格式解析为int型
+// 获取时间信息 将XXXX-XX-XX XX:XX:XX时间格式解析为int型
 int sg_get_time(char *dateTime, sys_time_s *sys_time)
 {
     int ret = VOS_OK;
     int pos = 0;
-    char Time_str[16];
+    char Time_str[16] = { 0 };
     pos = sg_find(dateTime, strlen(dateTime), "-", 1, 0);
     if (pos > 0) {
-        if (sg_str_mid(dateTime, strlen(dateTime), pos - 4, Time_str, 4)) {  		//年  
+        if (sg_str_mid(dateTime, strlen(dateTime), pos - 4, Time_str, 4)) {     // 年
             sys_time->tm_year = atoi(Time_str);
         } else {
-            printf("sg_str_mid_get_year_error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid_get_year_error!\n");
             ret = VOS_ERR;
         }
-        if (sg_str_mid(dateTime, strlen(dateTime), pos + 1, Time_str, 2)) {		//月 
+        if (sg_str_mid(dateTime, strlen(dateTime), pos + 1, Time_str, 2)) {     // 月
             sys_time->tm_mon = atoi(Time_str);
         } else {
-            printf("sg_str_mid_get_mon_error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid_get_mon_error!\n");
             ret = VOS_ERR;
         }
-        if (sg_str_mid(dateTime, strlen(dateTime), pos + 4, Time_str, 2)) {		//日 
+        if (sg_str_mid(dateTime, strlen(dateTime), pos + 4, Time_str, 2)) {     // 日
             sys_time->tm_mday = atoi(Time_str);
         } else {
-            printf("sg_str_mid_get_day_error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid_get_day_error!\n");
             ret = VOS_ERR;
         }
-        if (sg_str_mid(dateTime, strlen(dateTime), pos + 7, Time_str, 2)) {		//时 
+        if (sg_str_mid(dateTime, strlen(dateTime), pos + 7, Time_str, 2)) {     // 时
             sys_time->tm_hour = atoi(Time_str);
         } else {
-            printf("sg_str_mid_get_hour_error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid_get_hour_error!\n");
             ret = VOS_ERR;
         }
-        if (sg_str_mid(dateTime, strlen(dateTime), pos + 10, Time_str, 2)) {		//分 
+        if (sg_str_mid(dateTime, strlen(dateTime), pos + 10, Time_str, 2)) {    // 分
             sys_time->tm_min = atoi(Time_str);
         } else {
-            printf("sg_str_mid_get_min_error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid_get_min_error!\n");
             ret = VOS_ERR;
         }
-        if (sg_str_mid(dateTime, strlen(dateTime), pos + 13, Time_str, 2)) {		//秒 
+        if (sg_str_mid(dateTime, strlen(dateTime), pos + 13, Time_str, 2)) {    // 秒
             sys_time->tm_sec = atoi(Time_str);
-            printf("sys_time->tm_sec = %d\n", sys_time->tm_sec);
+            SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "sys_time->tm_sec = %d\n", sys_time->tm_sec);
         } else {
-            printf("sg_str_mid_get_sec_error!\n");
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_str_mid_get_sec_error!\n");
             ret = VOS_ERR;
         }
     } else {
-        printf("common_get pos error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "common_get pos error!\n");
         ret = VOS_ERR;
     }
     return ret;
@@ -916,5 +865,5 @@ int sg_get_dev_edge_reboot(void)
 void sg_set_edge_reboot(int flag)
 {
     edge_reboot_flag = flag;
-    printf("Set edge_reboot_flag = %d . \n", edge_reboot_flag);
+    SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Set edge_reboot_flag = %d\n", edge_reboot_flag);
 }

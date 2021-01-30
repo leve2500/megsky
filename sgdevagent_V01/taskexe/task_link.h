@@ -8,8 +8,8 @@
   *修改记录：
 =====================================================================*/
 
-#ifndef _TASK_LINK_H_
-#define _TASK_LINK_H_
+#ifndef __TASK_LINK_H__
+#define __TASK_LINK_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -28,16 +28,14 @@ int sg_get_mem_devinfo(mem_info_s *info);                                 //获取
 int sg_get_disk_devinfo(disk_info_s *info);                               //获取disk信息字段 
 int sg_get_os_devinfo(os_info_s *info);                                   //获取os信息字段
 int sgcc_get_links_info(link_info_s **links_info_out, int *links_num);    //获取links信息字段
-int sgcc_get_links_info2(link_dev_info_s **links_info_out, int *links_num);
+int sgcc_get_links_status(link_dev_info_s **links_info_out, int *links_num);
 
-int sg_down_update_host(device_upgrade_s cmdobj, char *errormsg);
-int sg_down_update_patch(device_upgrade_s cmdobj, char *errormsg);
+int sg_down_update_host(device_upgrade_s cmd_obj, char *errormsg);
+int sg_down_update_patch(device_upgrade_s cmd_obj, char *errormsg);
 int sg_get_devstdatetime(char *timeBuf, long *timenum);                //获取设备最近一次启动时间 获取设备运行时长
 uint32_t sg_memvirt_total(void);                                    //获取虚拟内存的使用总量
 
 uint8_t sg_memvirt_used(void);        //获取虚拟内存的当前使用率
-void sg_getdevinf(void);              //获取其他设备信息
-void sg_getdevname(char *devname);       //获取设备名称	
 
 //设备管理参数修改命令封装方法
 int sg_get_devusage_threshold(int *threshold, uint8_t select);      //获取到设备中的alert值

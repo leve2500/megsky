@@ -1,30 +1,27 @@
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2020. All rights reserved.
+ * Description : sgdevagent task execute header file
+*/
 
-
-/*=====================================================================
- * 文件：thread_task_exe.h
- *
- * 描述：任务执行线程
- *
- * 作者：田振超			2020年9月27日17:10:06
- *
- * 修改记录：
- =====================================================================*/
-
-
-#ifndef _TASK_EXECUTION_H_
-#define _TASK_EXECUTION_H_
+#ifndef __TASK_EXECUTION_H__
+#define __TASK_EXECUTION_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
- //
-int sg_task_execution_dev_thread(void);
+#define SG_DEVICE_TASK_NAME "edev"
+#define SG_CONTAINER_TASK_NAME "econ"
+#define SG_APP_TASK_NAME "eapp"
+#define MS_EXECUTE_THREAD_CONNECT_WAIT (1000 * 10)
+#define MSG_ORDER_NUM_ZERO (0)
+#define MSG_ORDER_NUM_FIRST (1)
+#define MSG_ORDER_NUM_SECOND (2)
+#define MSG_ORDER_NUM_THIRD (3)
 
-int sg_task_execution_container_thread(void);
 
-int sg_task_execution_app_thread(void);
-
+int sg_init_exe_thread(void);
+int sg_exit_exe_thread(void);
 
 #ifdef __cplusplus
 }

@@ -13,5 +13,5 @@ void sg_log_init(void)
 }
 void sg_log_close(void)
 {
-    closelog();
+    (void)closelog();
 }

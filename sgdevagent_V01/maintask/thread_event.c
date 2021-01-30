@@ -23,56 +23,32 @@
 
 uint32_t g_create_event_id = 0;
 
-typedef enum{
-    ALARM_WARNING = 1,
-    ALARM_MINOR,
-    ALARM_MAJOR,
-    ALARM_CRITICAL
-}AlarmServeritytype;
-
-typedef enum{
-    ALARM_RESTORE = 1,  //告警恢复
-    ALARM_GENERATE,        //告警生成
-    ALARM_UPDATE        //告警更新
-}AlarmIndicationType;
-
-typedef struct {
-    char function[ALARM_FUNCTION_LEN];      //32
-    char type[ALARM_TYPE_LEN];              //64
-    char qualifier[ALARM_QUALIFIER_LEN];    //256 
-    AlarmServeritytype severity;
-    AlarmIndicationType indication;
-    char params[ALARM_PARAMS_LEN]            //512
-}AlarmInfoType;
-
-typedef struct {
-    AlarmInfoType info;
-    char eventTime[ALARM_EVENTTIME_LEN]; //64
-}AlarmInfoExType;
-
-void sg_alarm_topic_pro(msg_buf, msg_len);
+void sg_alarm_topic_pro(char *msg_buf, size_t msg_len);
 int sg_event_deal_thread(void);
 
 int sg_init_event_thread(void)
 {
     int ret;
-
     ret = (int)VOS_T_Create(SG_EVENT_TASK_NAME, VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_event_deal_thread,                                        //启动任务1 设备接入线程
         &g_create_event_id);
     if (ret != VOS_OK) {
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "task(%s) creat failed ret:%d.\n", SG_EVENT_TASK_NAME, ret);
         return VOS_ERR;
     }
+
+    return VOS_OK;
 }
 
 int sg_exit_event_thread(void)
 {
     int ret;
-    ret = VOS_T_Delete(g_create_event_id);
+    ret = (int)VOS_T_Delete(g_create_event_id);
     if (ret != VOS_OK) {
-        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "task(skmg) destroy failed ret:%d.\n", ret);
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "task(%s) destroy failed ret:%d.\n", SG_EVENT_TASK_NAME, ret);
         return VOS_ERR;
     }
+
+    return VOS_OK;
 }
 void sg_alarm_topic_pro(char *msg_buf, size_t msg_len)
 {
@@ -83,14 +59,12 @@ void sg_alarm_topic_pro(char *msg_buf, size_t msg_len)
     }
 
     alarm_status = (AlarmInfoStatusType *)msg_buf;
-
-
-    //处理
 }
-//事件线程
 
+// 事件线程
 int sg_event_deal_thread(void)
 {
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "sg_event_deal_thread start.\n");
     int ret;
     int fd;
     char *msg_buf = NULL;
@@ -109,14 +83,12 @@ int sg_event_deal_thread(void)
     for (;;) {
         msg_len = MSGPROC_MSG_LENGTH_MAX;
         (void)memset_s(msg_buf, MSGPROC_MSG_LENGTH_MAX, 0, MSGPROC_MSG_LENGTH_MAX);
-
-        // 获取告警信息
-        ret = kmsg_subpub_sonsume_block(%fd, NULL, 0, msg_buf, &msg_len);
+        ret = kmsg_subpub_sonsume_block(%fd, NULL, 0, msg_buf, &msg_len);           // 获取告警信息
         if(ret < 0){
             SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "kmsg_subpub_sonsume_block failed.\n");
         }
-        sg_alarm_topic_pro(msg_buf, msg_len);
 
+        sg_alarm_topic_pro(msg_buf, msg_len);
     }
     (void)kmsg_sub_close(fd);
 }

@@ -64,8 +64,8 @@ static void sg_convert_sock_addr(s_socket_param addr1, int ListenFlag)
 {
     m_sockaddr.sin_family = AF_INET; //AF_UNIX
     //
-    m_sockaddr.sin_port = htons(addr1.portNumber);
-    m_sockaddr.sin_addr.s_addr = inet_addr(addr1.IPAddress);
+    m_sockaddr.sin_port = htons(addr1.port_number);
+    m_sockaddr.sin_addr.s_addr = inet_addr(addr1.ip_address);
 }
 
 // 是否已经连接

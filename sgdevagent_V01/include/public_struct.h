@@ -49,15 +49,18 @@ extern "C" {  // only need to export C interface if used by C++ source code
 #define DATA_BUF_F512_SIZE 512
 
 
-#define MSECOND 1000000
-#define TEN_MSECOND 100000
+#define MSECOND (1000000)
+#define TEN_MSECOND (100000)
+#define SG_SECOND(1000)
+#define MS_HUNDRED_INTERVAL (100)
 
-#define JSON_BUF_SIZE 256
+#define JSON_BUF_SIZE (256)
 
 #define CPU_USAGE 1
 #define MEM_USAGE 2
 #define STORAGE_USAGE 3
 
+#define SG_DEV_UPDATE_SECTION_FLAG (1) 
 
 #define UPGRADEPACH 0
 #define UPGRADEHOST 3
@@ -124,7 +127,7 @@ typedef struct mqtt_header {
 
 typedef struct mqtt_data_info {
     char msg_send[MSG_ARRVD_MAX_LEN];
-    char pubtopic[256];
+    char pub_topic[DATA_BUF_F256_SIZE];
 }mqtt_data_info_s;
 
 
@@ -378,10 +381,10 @@ typedef struct sg_dev_section_info {
 
 // 周期结构体
 typedef struct sg_period_info {
-    uint32_t        appperiod;                  // APP状态上报周期 单位秒
-    uint32_t        containerperiod;            // 容器状态上报周期 单位秒
-    uint32_t        devperiod;                  // 设备状态上报周期
-    uint32_t        devheartbeatperiod;         // 设备心跳上报周期
+    uint32_t        app_period;                  // APP状态上报周期 单位秒
+    uint32_t        container_period;            // 容器状态上报周期 单位秒
+    uint32_t        dev_period;                  // 设备状态上报周期
+    uint32_t        dev_heartbeat_period;         // 设备心跳上报周期
 }sg_period_info_s;
 
 #ifdef __cplusplus

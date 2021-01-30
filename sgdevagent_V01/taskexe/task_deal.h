@@ -23,7 +23,7 @@ extern "C" {
 
 
  //设备升级命令
-int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s cmdobj);
+int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s *cmd_obj);
 
 //设备升级命令 断面
 void sg_handle_dev_install_section(sg_dev_section_info_s pcfg);
@@ -52,7 +52,7 @@ int sg_handle_dev_ctrl_cmd(int32_t mid, char *action);
 
 /*========================容器管理================================== */
 //容器安装控制
-void sg_handle_container_install_cmd(int32_t mid, container_install_cmd_s cmdobj);
+void sg_handle_container_install_cmd(int32_t mid, container_install_cmd_s cmd_obj);
 
 //容器启动
 int sg_handle_container_start_cmd(int32_t mid, char *container_name);
@@ -64,7 +64,7 @@ int sg_handle_container_stop_cmd(int32_t mid, char *container_name);
 int sg_handle_container_delete_cmd(int32_t mid, char *container_name);
 
 //容器配置修改
-int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj);
+int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmd_obj);
 
 //容器配置查询应答
 int sg_handle_container_param_get(int32_t mid);
@@ -73,34 +73,34 @@ int sg_handle_container_param_get(int32_t mid);
 int sg_handle_container_status_get(char *type, int32_t mid);
 
 //容器升级
-void sg_handle_container_upgrade_cmd(int32_t mid, container_upgrade_cmd_s cmdobj);
+void sg_handle_container_upgrade_cmd(int32_t mid, container_upgrade_cmd_s cmd_obj);
 
 //容器日志召回
-int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmdobj);
+int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmd_obj);
 
 
 /*========================APP管理================================== */
 
 //应用安装控制
-void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmdobj);
+void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmd_obj);
 
 //应用启动
-int sg_handle_app_start_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_start_cmd(int32_t mid, app_control_cmd_s *cmd_obj);
 
 //应用停止
-int sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmd_obj);
 
 //应用卸载
-int sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmd_obj);
 
 //应用使能
-int sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmd_obj);
 
 //应用去使能
-int sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj);
+int sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmd_obj);
 
 //应用配置修改
-int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmdobj);
+int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmd_obj);
 
 //应用配置状态查询命令
 void sg_handle_app_param_get(int32_t mid, char *container_name);
@@ -109,10 +109,10 @@ void sg_handle_app_param_get(int32_t mid, char *container_name);
 void sg_handle_app_status_get(int32_t mid, char *container_name);
 
 //应用升级
-void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmdobj);
+void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmd_obj);
 
 //应用日志查询
-void sg_handle_app_log_get_cmd(int32_t mid, app_log_recall_cmd_s cmdobj);
+void sg_handle_app_log_get_cmd(int32_t mid, app_log_recall_cmd_s cmd_obj);
 
 #ifdef __cplusplus
 }

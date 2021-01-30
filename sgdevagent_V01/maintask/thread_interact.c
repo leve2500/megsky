@@ -13,6 +13,7 @@
 
 #include "sgdev_struct.h"
 #include "sgdev_queue.h"
+#include "sgdev_debug.h"
 #include "mqtt_pub.h"
 #include "mqtt_dev.h"
 #include "mqtt_app.h"
@@ -29,25 +30,65 @@ dev_status_reply_s container_upgrade_status = { 0 };
 dev_status_reply_s app_install_status = { 0 };
 dev_status_reply_s app_upgrade_status = { 0 };
 
-uint8_t m_exe_state = TASK_EXE_STATUS_NULL;
+uint8_t g_exe_state = TASK_EXE_STATUS_NULL;
+uint32_t g_create_bus_int_id = 0;
 
-static void sg_pack_dev_upgrade_status(int16_t code, int32_t mid)
+int sg_bus_inter_thread(void);
+
+int sg_init_interact_thread(void)
 {
+    VOS_UINT32 ret = 0;
+    ret = VOS_T_Create(SG_INTERACT_TASK_NAME, VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_bus_inter_thread,
+        &g_create_bus_int_id);
+    if (ret != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "task(%s) creat failed ret:%d.\n", SG_INTERACT_TASK_NAME, ret);
+        return VOS_ERR;
+    }
 
+    return VOS_OK;
+}
+
+int sg_exit_interact_thread(void)
+{
+    VOS_UINT32 ret = 0;
+    ret = VOS_T_Delete(g_create_bus_int_id);
+    if (ret != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "task(%s) destroy failed ret:%d.\n", SG_INTERACT_TASK_NAME, ret);
+        return VOS_ERR;
+    }
+    
+    return VOS_OK;
+}
+
+static void sg_pack_dev_upgrade_status(int32_t mid, int32_t jobId)
+{
+    int16_t code = REQUEST_SUCCESS;
     int ret = VOS_OK;
     mqtt_data_info_s *item = NULL;
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    char errormsg[DATA_BUF_F256_SIZE];
-    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
-
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_sub_dev_res());
-    ret = sg_pack_dev_install_query(code, mid, errormsg, device_upgrade_status, item->msg_send);
-    if (VOS_OK != ret) {
-        printf("\n sg_pack_dev_install_query fail.");
+    char errormsg[DATA_BUF_F256_SIZE] = { 0 };
+    if (sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success")) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_pack_dev_upgrade_status:sprintf_s errormsg failed.\n");
+        return;
     }
-    sg_push_pack_item(item);        //入列
+
+    if (sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_sub_dev_res()) < 0) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_pack_dev_upgrade_status:sprintf_s pub_topic failed.\n");
+        return;
+    }
+
+    if (jobId != device_upgrade_status.jobId) {
+        code = REQUEST_FAILED;
+    }
+
+    ret = sg_pack_dev_install_query(code, mid, errormsg, device_upgrade_status, item->msg_send);
+    if (ret ！= VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "send device upgrade status failed.\n");
+    }
+
+    (void)sg_push_pack_item(item);
 }
 
 static void sg_pack_container_upgrade_status(int32_t mid, int32_t jobId)
@@ -58,327 +99,342 @@ static void sg_pack_container_upgrade_status(int32_t mid, int32_t jobId)
 
     dev_status_reply_s status = { 0 };
     (void)memset_s(&status, sizeof(dev_status_reply_s), 0, sizeof(dev_status_reply_s));
-    if (TASK_EXE_CONTAINER_INSTALL == m_exe_state) {
+
+    if (g_exe_state = TASK_EXE_CONTAINER_INSTALL) {
         status = container_install_status;
-    } else if (TASK_EXE_CONTAINER_UP == m_exe_state) {
+    } else if (g_exe_state = TASK_EXE_CONTAINER_UP) {
         status = container_upgrade_status;
     }
+
     if (jobId != status.jobId) {
         code = REQUEST_FAILED;
     }
 
-    char errormsg[DATA_BUF_F256_SIZE];
-    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
+    char errormsg[DATA_BUF_F256_SIZE] = { 0 };
+    if (sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success")) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_pack_container_upgrade_status:sprintf_s errormsg failed.\n");
+        return;
+    }
 
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
-    ret = sg_pack_dev_install_query(code, mid, errormsg, status, item->msg_send);
-    if (VOS_OK != ret) {
-        printf("\n sg_pack_dev_install_query fail.");
+    if(sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub()) < 0) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_pack_container_upgrade_status:sprintf_s pub_topic failed.\n");
     }
-    sg_push_pack_item(item);        //入列
+    ret = sg_pack_dev_install_query(code, mid, errormsg, status, item->msg_send);
+    if (ret != VOS_OK !) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "send container install or update status failed.\n");
+    }
+    (void)sg_push_pack_item(item);
 }
-
 
 static void sg_pack_app_upgrade_status(int32_t mid, int32_t jobId)
 {
     int16_t code = REQUEST_SUCCESS;
     int ret = VOS_OK;
     mqtt_data_info_s *item = NULL;
-
     dev_status_reply_s status;
-    if (TASK_EXE_APP_INSTALL == m_exe_state) {
+    if (g_exe_state == TASK_EXE_APP_INSTALL) {
         status = app_install_status;
-    } else if (TASK_EXE_APP_UP == m_exe_state) {
+    } else if (g_exe_state == TASK_EXE_APP_UP) {
         status = app_upgrade_status;
     }
+
     if (jobId != status.jobId) {
         code = REQUEST_FAILED;
     }
 
     char errormsg[DATA_BUF_F256_SIZE];
-    sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
+    if (sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success")) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_pack_container_upgrade_status:sprintf_s errormsg failed.\n");
+        return;
+    }
 
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
-    ret = sg_pack_dev_install_query(code, mid, errormsg, status, item->msg_send);
-    if (VOS_OK != ret) {
-        printf("\n sg_pack_dev_install_query fail.");
+    if (sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub()) < 0) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_pack_app_upgrade_status:sprintf_s pub_topic failed.\n");
     }
-    sg_push_pack_item(item);        //入列
+
+    ret = sg_pack_dev_install_query(code, mid, errormsg, status, item->msg_send);
+    if (ret != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "send app install or update status failed.\n");
+    }
+
+    (void)sg_push_pack_item(item);
 }
 
 static void sg_dev_com_data_unpack(char* param, char* type, int32_t mid)
 {
-    uint16_t cmdType = TAG_CMD_NULL;
-    int32_t                 jobId;
+    uint16_t cmd_type = TAG_CMD_NULL;
+    int32_t jobId;
     int16_t code = REQUEST_SUCCESS;
-    json_t *jparam = NULL;
-    jparam = load_json(param);
-    if (NULL == jparam) {
-        printf("sg_dev_com_data_unpack fail \n");
+    json_t *json_param = NULL;
+    if (type == NULL) {
         return;
     }
-    if (0 == strncmp(type, CMD_SYS_UPGRADE, strlen(CMD_SYS_UPGRADE))) {          //设备升级命令 
-        cmdType = TAG_CMD_SYS_UPGRADE;
-        m_exe_state = TASK_EXE_DEV_UP;
-        sg_push_dev_item(cmdType, mid, param);
-        printf("CMD_SYS_UPGRADE \n");   //测试用
-    } else if (0 == strncmp(type, CMD_STATUS_QUERY, strlen(CMD_STATUS_QUERY))) {	//设备升级状态查询
-        jobId = sg_unpack_dev_install_query(jparam);
-        if (jobId != device_upgrade_status.jobId) {
-            code = REQUEST_FAILED;
+
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "unpack  command (%s).\n", type);
+    if (strncmp(type, CMD_STATUS_QUERY, strlen(CMD_STATUS_QUERY)) == 0) {        // 设备升级状态查询
+        if (param == NULL) {
+            return;
         }
-        sg_pack_dev_upgrade_status(code, mid);
-        printf("CMD_STATUS_QUERY \n");   //测试用
+        json_param = load_json(param);
+        if (json_param == NULL) {
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "unframe the device  message body failed or param is valid.\n", param);
+        } else {
+            jobId = sg_unpack_dev_install_query(json_param);
+            (void)sg_pack_dev_upgrade_status(mid, device_upgrade_status.jobId);
+        }
         if (param != NULL) {
             free(param);
         }
-    } else if (0 == strncmp(type, CMD_SYS_STATUS, strlen(CMD_SYS_STATUS))) {        //设备状态查询命令
-        cmdType = TAG_CMD_SYS_STATUS;
-        sg_push_dev_item(cmdType, mid, param);
-        printf("CMD_SYS_STATUS \n");   //测试用
-    } else if (0 == strncmp(type, CMD_INFO_QUERY, strlen(CMD_INFO_QUERY))) {        //设备信息查询命令
-        cmdType = TAG_CMD_INFO_QUERY;
-        sg_push_dev_item(cmdType, mid, param);
-        printf("CMD_INFO_QUERY \n");   //测试用
-    } else if (0 == strncmp(type, CMD_SYS_SET_CONFIG, strlen(CMD_SYS_SET_CONFIG))) {//设备管理参数修改命令
-        cmdType = TAG_CMD_SYS_SET_CONFIG;
-        sg_push_dev_item(cmdType, mid, param);
-        printf("CMD_SYS_SET_CONFIG \n"); //测试用
+    } else {
+        if (strncmp(type, CMD_SYS_UPGRADE, strlen(CMD_SYS_UPGRADE)) == 0) {                 // 设备升级命令
+            cmd_type = TAG_CMD_SYS_UPGRADE;
+            g_exe_state = TASK_EXE_DEV_UP;
+        } else if (strncmp(type, CMD_SYS_STATUS, strlen(CMD_SYS_STATUS)) == 0) {            // 设备状态查询命令
+            cmd_type = TAG_CMD_SYS_STATUS;
+        } else if (strncmp(type, CMD_INFO_QUERY, strlen(CMD_INFO_QUERY)) == 0) {            // 设备信息查询命令
+            cmd_type = TAG_CMD_INFO_QUERY;
+        } else if (strncmp(type, CMD_SYS_SET_CONFIG, strlen(CMD_SYS_SET_CONFIG)) == 0) {    // 设备管理参数修改命令
+            cmd_type = TAG_CMD_SYS_SET_CONFIG;
+        } else if (strncmp(type, CMD_DATETIME_SYN, strlen(CMD_DATETIME_SYN)) == 0) {        // 设备时间同步命令
+            cmd_type = TAG_CMD_DATETIME_SYN;
+        } else if (strncmp(type, CMD_SYS_LOG, strlen(CMD_SYS_LOG)) == 0) {                  // 设备日志召回
+            cmd_type = TAG_CMD_SYS_LOG;
+        } else if (strncmp(type, CMD_CTRL, strlen(CMD_CTRL)) == 0) {                        // 设备控制命令
+            cmd_type = TAG_CMD_CTRL;
+        }
 
-    } else if (0 == strncmp(type, CMD_DATETIME_SYN, strlen(CMD_DATETIME_SYN))) {    //设备时间同步命令
-        cmdType = TAG_CMD_DATETIME_SYN;
-        sg_push_dev_item(cmdType, mid, param);
-        printf("CMD_DATETIME_SYN \n");  //测试用
-    } else if (0 == strncmp(type, CMD_SYS_LOG, strlen(CMD_SYS_LOG))) {              //设备日志召回
-        cmdType = TAG_CMD_SYS_LOG;
-        sg_push_dev_item(cmdType, mid, param);
-        printf("CMD_SYS_LOG \n");       //测试用 
-    } else if (0 == strncmp(type, CMD_CTRL, strlen(CMD_CTRL))) {                    //设备控制命令
-        cmdType = TAG_CMD_CTRL;
-        sg_push_dev_item(cmdType, mid, param);
-        printf("CMD_CTRL \n");          //测试用 
+        (void)sg_push_dev_item(cmd_type, mid, param);
     }
-    if (NULL != jparam) {
-        json_decref(jparam);//会将所有的子节点都free
+
+    if (json_param != NULL) {
+        (void)json_decref(json_param);
     }
+
 }
 
 static void sg_dev_res_data_unpack(char *param, char *type)
 {
-    uint8_t heartFlag = 0;
-    if (0 == strncmp(type, EVENT_LINKUP, strlen(EVENT_LINKUP))) {                //上线 
+    uint8_t heart_flag = 0;
+    if (strncmp(type, EVENT_LINKUP, strlen(EVENT_LINKUP)) == 0) {                       // 上线
         (void)sg_set_dev_ins_flag(DEVICE_ONLINE);
-    } else if (0 == strncmp(type, EVENT_HEARTBEAT, strlen(EVENT_HEARTBEAT))) {     //心跳应答
-        heartFlag = 1;
-        (void)sg_set_dev_heart_flag(heartFlag);
+    } else if (strncmp(type, EVENT_HEARTBEAT, strlen(EVENT_HEARTBEAT)) == 0) {          // 心跳应答
+        heart_flag = 1;
+        (void)sg_set_dev_heart_flag(heart_flag);
     }
-    // if(param != NULL){
-    //     VOS_Free(param);
-    //     param = NULL;
-    // }
+
+     if(param != NULL){
+         free(param);
+         param = NULL;
+     }
 }
 
-static void sg_ctai_com_data_unpack(char *param, char *type, int32_t mid)
+static void sg_pack_container_param_item(char *type, int32_t mid, char *param)
 {
-    uint16_t cmdType = TAG_CMD_NULL;
-    int32_t          jobId;
-    json_t *jparam = NULL;
-    jparam = load_json(param);
-    if (NULL == jparam) {
-        printf("\n sg_dev_com_data_unpack fail");
+    if (strncmp(type, CMD_CON_GET_CONFIG, strlen(CMD_CON_GET_CONFIG)) == 0) {               // 容器配置查询命令 设备队列中
+        cmd_type = TAG_CMD_CON_GET_CONFIG;
+        (void)sg_push_dev_item(cmd_type, mid, param);
+    } else if (strncmp(type, CMD_CON_STATUS, strlen(CMD_CON_STATUS)) == 0) {                // 容器状态查询命令 设备队列中
+        cmd_type = TAG_CMD_CON_STATUS;
+        (void)sg_push_dev_item(cmd_type, mid, param);
+    } else {
+        if (strncmp(type, CMD_CON_INSTALL, strlen(CMD_CON_INSTALL)) == 0) {                 // 容器安装控制命令 
+            cmd_type = TAG_CMD_CON_INSTALL;
+            g_exe_state = TASK_EXE_CONTAINER_INSTALL;
+        } else if (strncmp(type, CMD_CON_START, strlen(CMD_CON_START)) == 0) {              // 容器启动控制命令
+            cmd_type = TAG_CMD_CON_START;
+        } else if (strncmp(type, CMD_CON_STOP, strlen(CMD_CON_STOP)) == 0) {                // 容器停止控制命令
+            cmd_type = TAG_CMD_CON_STOP;
+        } else if (strncmp(type, CMD_CON_REMOVE, strlen(CMD_CON_REMOVE)) == 0) {            // 容器删除控制
+            cmd_type = TAG_CMD_CON_REMOVE;
+        } else if (strncmp(type, CMD_CON_SET_CONFIG, strlen(CMD_CON_SET_CONFIG)) == 0) {    // 容器配置修改命令
+            cmd_type = TAG_CMD_CON_SET_CONFIG;
+        } else if (strncmp(type, CMD_CON_UPGRADE, strlen(CMD_CON_UPGRADE)) == 0) {          // 容器升级命令
+            g_exe_state = TASK_EXE_CONTAINER_UP;
+            cmd_type = TAG_CMD_CON_UPGRADE;
+        } else if (strncmp(type, CMD_CON_LOG, strlen(CMD_CON_LOG)) == 0) {                  // 容器日志召回命令
+            cmd_type = TAG_CMD_CON_LOG;
+        }
+
+        (void)sg_push_container_item(cmd_type, mid, param);
+    }
+}
+
+static void sg_container_com_data_unpack(char *param, char *type, int32_t mid)
+{
+    uint16_t cmd_type = TAG_CMD_NULL;
+    int32_t jobId;
+    json_t *json_param = NULL;
+    if (type == NULL) {
         return;
     }
-    if (0 == strncmp(type, CMD_STATUS_QUERY, strlen(CMD_STATUS_QUERY))) {                       //容器升级状态查询命令,容器安装状态查询命令
-        jobId = sg_unpack_dev_install_query(jparam);
-        sg_pack_container_upgrade_status(mid, jobId);
-        printf("CMD_STATUS_QUERY!\n");
+
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "unpack  command (%s).\n", type);
+    if (strncmp(type, CMD_STATUS_QUERY, strlen(CMD_STATUS_QUERY)) == 0) {                       // 容器升级状态查询命令,容器安装状态查询命令
+        if (param == NULL) {
+            return;
+        }
+
+        json_param = load_json(param);
+        if (json_param == NULL) {
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "unframe the container  message body failed.\n", param);
+        } else {
+            jobId = sg_unpack_dev_install_query(json_param);
+            (void)sg_pack_container_upgrade_status(mid, jobId);
+        }
 
         if (param != NULL) {
-            VOS_Free(param);
+            (void)free(param);
+            param = NULL;
         }
     } else {
-        if (0 == strncmp(type, CMD_CON_GET_CONFIG, strlen(CMD_CON_GET_CONFIG))) {               //容器配置查询命令 设备队列中
-            cmdType = TAG_CMD_CON_GET_CONFIG;
-            sg_push_dev_item(cmdType, mid, param);
-            printf("CMD_CON_GET_CONFIG!\n");
-
-        } else if (0 == strncmp(type, CMD_CON_STATUS, strlen(CMD_CON_STATUS))) {                //容器状态查询命令 设备队列中
-            cmdType = TAG_CMD_CON_STATUS;
-            sg_push_dev_item(cmdType, mid, param);
-            printf("CMD_CON_STATUS!\n");
-
-        } else {
-            if (0 == strncmp(type, CMD_CON_INSTALL, strlen(CMD_CON_INSTALL))) {                 //容器安装控制命令 
-                cmdType = TAG_CMD_CON_INSTALL;
-                m_exe_state = TASK_EXE_CONTAINER_INSTALL;
-                printf("container_install_success!\n");
-
-            } else if (0 == strncmp(type, CMD_CON_START, strlen(CMD_CON_START))) {              //容器启动控制命令
-                cmdType = TAG_CMD_CON_START;
-                printf("container_start_success!\n");
-
-            } else if (0 == strncmp(type, CMD_CON_STOP, strlen(CMD_CON_STOP))) {                //容器停止控制命令
-                cmdType = TAG_CMD_CON_STOP;
-                printf("container_stop_success!\n");
-
-            } else if (0 == strncmp(type, CMD_CON_REMOVE, strlen(CMD_CON_REMOVE))) {            //容器删除控制
-                cmdType = TAG_CMD_CON_REMOVE;
-                printf("container_remove_success!\n");
-
-            } else if (0 == strncmp(type, CMD_CON_SET_CONFIG, strlen(CMD_CON_SET_CONFIG))) {    //容器配置修改命令
-                cmdType = TAG_CMD_CON_SET_CONFIG;
-                printf("container_set_success!\n");
-
-            } else if (0 == strncmp(type, CMD_CON_UPGRADE, strlen(CMD_CON_UPGRADE))) {          //容器升级命令
-                m_exe_state = TASK_EXE_CONTAINER_UP;
-                cmdType = TAG_CMD_CON_UPGRADE;
-                printf("container_upgrade_success!\n");
-
-            } else if (0 == strncmp(type, CMD_CON_LOG, strlen(CMD_CON_LOG))) {                  //容器日志召回命令
-                cmdType = TAG_CMD_CON_LOG;
-                printf("container_log_success!\n");
-            }
-            sg_push_container_item(cmdType, mid, param);
-        }
+        (void)sg_pack_container_param_item(type, mid, param);
     }
-    if (NULL != jparam) {
-        json_decref(jparam);//会将所有的子节点都free
+
+    if (NULL != json_param) {
+        (void)json_decref(json_param);//会将所有的子节点都free
+    }
+}
+
+static void sg_pack_app_param_item(char *type, int32_t mid, char *param)
+{
+    if (strncmp(type, CMD_APP_GET_CONFIG, strlen(CMD_APP_GET_CONFIG)) == 0) {               // 应用配置查询  设备队列中
+        cmd_type = TAG_CMD_APP_GET_CONFIG;
+        (void)sg_push_dev_item(cmd_type, mid, param);
+    } else if (strncmp(type, CMD_APP_STATUS, strlen(CMD_APP_STATUS)) == 0) {                // 应用状态查询命令  设备队列中
+        cmd_type = TAG_CMD_APP_STATUS;
+        (void)sg_push_dev_item(cmd_type, mid, param);
+    } else {
+        if (strncmp(type, CMD_APP_INSTALL, strlen(CMD_APP_INSTALL)) == 0) {                 // 应用安装控制命令
+            g_exe_state = TASK_EXE_APP_INSTALL;
+            cmd_type = TAG_CMD_CON_LOG;
+        } else if (0 == strncmp(type, CMD_APP_START, strlen(CMD_APP_START))) {              // 应用启动
+            cmd_type = TAG_CMD_APP_START;
+        } else if (0 == strncmp(type, CMD_APP_STOP, strlen(CMD_APP_STOP))) {                // 应用停止
+            cmd_type = TAG_CMD_APP_STOP;
+        } else if (0 == strncmp(type, CMD_APP_REMOVE, strlen(CMD_APP_REMOVE))) {            // 应用卸载
+            cmd_type = TAG_CMD_APP_REMOVE;
+        } else if (0 == strncmp(type, CMD_APP_ENABLE, strlen(CMD_APP_ENABLE))) {            // 应用使能
+            cmd_type = TAG_CMD_APP_ENABLE;
+        } else if (0 == strncmp(type, CMD_APP_UNENABLE, strlen(CMD_APP_UNENABLE))) {        // 去使能
+            cmd_type = TAG_CMD_APP_UNENABLE;
+        } else if (0 == strncmp(type, CMD_APP_SET_CONFIG, strlen(CMD_APP_SET_CONFIG))) {    // 应用配置修改命令
+            cmd_type = TAG_CMD_APP_SET_CONFIG;
+        } else if (0 == strncmp(type, CMD_APP_UPGRADE, strlen(CMD_APP_UPGRADE))) {          // 容器升级命令
+            g_exe_state = TASK_EXE_APP_UP;
+            cmd_type = TAG_CMD_APP_UPGRADE;
+        } else if (0 == strncmp(type, CMD_APP_LOG, strlen(CMD_APP_LOG))) {                  // 应用日志召回命令
+            cmd_type = TAG_CMD_APP_LOG;
+        }
+
+        (void)sg_push_app_item(cmd_type, mid, param);
     }
 }
 
 static void sg_app_com_data_unpack(char* param, char *type, int32_t mid)
 {
-    uint16_t cmdType = TAG_CMD_NULL;
-    int32_t             jobId;
-    json_t *jparam = NULL;
-    jparam = load_json(param);
-    if (NULL == jparam) {
-        printf("\n sg_dev_com_data_unpack fail");
+    uint16_t cmd_type = TAG_CMD_NULL;
+    int32_t jobId;
+    json_t *json_param = NULL;
+    if (type == NULL) {
         return;
     }
-    if (0 == strncmp(type, CMD_STATUS_QUERY, strlen(CMD_STATUS_QUERY))) {			            //app安装状态查询命令/app升级状态查询命令
-        jobId = sg_unpack_dev_install_query(jparam);
-        sg_pack_app_upgrade_status(mid, jobId);
-        printf("CMD_STATUS_QUERY \n");
-        if (param != NULL)
-            free(param);
-    } else {
-        if (0 == strncmp(type, CMD_APP_GET_CONFIG, strlen(CMD_APP_GET_CONFIG))) {             //应用配置查询  设备队列中
-            cmdType = TAG_CMD_APP_GET_CONFIG;
-            sg_push_dev_item(cmdType, mid, param);
-            printf("CMD_APP_GET_CONFIG \n");
-        } else if (0 == strncmp(type, CMD_APP_STATUS, strlen(CMD_APP_STATUS))) {                //应用状态查询命令  设备队列中
-            cmdType = TAG_CMD_APP_STATUS;
-            sg_push_dev_item(cmdType, mid, param);
-            printf("CMD_APP_STATUS \n");
+
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "unpack  command (%s).\n", type);
+    if (strncmp(type, CMD_STATUS_QUERY, strlen(CMD_STATUS_QUERY)) == 0) {            // app安装状态查询命令/app升级状态查询命令
+        if (param == NULL) {
+            return;
+        }
+
+        json_param = load_json(param);
+        if (NULL == json_param) {
+            SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "load app json(%s) failed.\n", param);
         } else {
-            if (0 == strncmp(type, CMD_APP_INSTALL, strlen(CMD_APP_INSTALL))) {               //应用安装控制命令
-                m_exe_state = TASK_EXE_APP_INSTALL;
-                cmdType = TAG_CMD_CON_LOG;
-                printf("CMD_APP_INSTALL \n");
-            } else if (0 == strncmp(type, CMD_APP_START, strlen(CMD_APP_START))) {              //应用启动
-                cmdType = TAG_CMD_APP_START;
-                printf("CMD_APP_START \n");
-            } else if (0 == strncmp(type, CMD_APP_STOP, strlen(CMD_APP_STOP))) {                //应用停止
-                cmdType = TAG_CMD_APP_STOP;
-                printf("CMD_APP_STOP \n");
-            } else if (0 == strncmp(type, CMD_APP_REMOVE, strlen(CMD_APP_REMOVE))) {            //应用卸载
-                cmdType = TAG_CMD_APP_REMOVE;
-                printf("CMD_APP_REMOVE \n");
-            } else if (0 == strncmp(type, CMD_APP_ENABLE, strlen(CMD_APP_ENABLE))) {            //应用使能
-                cmdType = TAG_CMD_APP_ENABLE;
-                printf("CMD_APP_ENABLE \n");
-            } else if (0 == strncmp(type, CMD_APP_UNENABLE, strlen(CMD_APP_UNENABLE))) {		//去使能
-                cmdType = TAG_CMD_APP_UNENABLE;
-                printf("CMD_APP_UNENABLE \n");
-            } else if (0 == strncmp(type, CMD_APP_SET_CONFIG, strlen(CMD_APP_SET_CONFIG))) {	//应用配置修改命令
-                cmdType = TAG_CMD_APP_SET_CONFIG;
-                printf("CMD_APP_SET_CONFIG \n");
-            } else if (0 == strncmp(type, CMD_APP_UPGRADE, strlen(CMD_APP_UPGRADE))) {			//容器升级命令
-                m_exe_state = TASK_EXE_APP_UP;
-                cmdType = TAG_CMD_APP_UPGRADE;
-                printf("CMD_APP_UPGRADE \n");
-            } else if (0 == strncmp(type, CMD_APP_LOG, strlen(CMD_APP_LOG))) {			        //应用日志召回命令
-                cmdType = TAG_CMD_APP_LOG;
-                printf("CMD_APP_LOG \n");
-            }
-            sg_push_app_item(cmdType, mid, param);
+            jobId = sg_unpack_dev_install_query(json_param);
+            (void)sg_pack_app_upgrade_status(mid, jobId);
+        }
+
+        if (param != NULL) {
+            free(param);
+            param = NULL;
+        }
+    } else {
+        (void)sg_pack_app_param_item(type, mid, param);
+    }
+
+    if (NULL != json_param) {
+        (void)json_decref(json_param);
+    }
+}
+
+static int32_t sg_get_json_content_heaser(uint8_t type, char *msg_type, json_t *param)
+{
+    if (type == TYPE_REQUEST) {
+        header_request = sg_unpack_json_msg_header_request(root);
+        param = header_request->param;
+        (void)memcpy_s(msg_type, DATA_BUF_F32_SIZE, header_request->type, strlen(header_request->type));
+        mid_id = header_request->mid;
+        if (header_request != NULL) {
+            (void)VOS_Free(header_request);
+            header_request = NULL;
+        }
+    } else if (type == TYPE_REPLY) {
+        header_reply = sg_unpack_json_msg_header_reply(root);
+        param = header_reply->param;
+        (void)memcpy_s(msg_type, 32, header_reply->type, strlen(header_reply->type) + 1);
+        mid_id = header_reply->mid;
+        if (header_reply != NULL) {
+            (void)VOS_Free(header_reply);
+            header_reply = NULL;
         }
     }
-    if (NULL != jparam) {
-        json_decref(jparam);//会将所有的子节点都free
-    }
+    return mid_id;
 }
 
 static void sg_topic_data_unpack(mqtt_data_info_s *item)
 {
-    if (NULL == item) {
-        printf("\n sg_topic_data_unpack fail,item = NULL.");
-        // return;
-    }
-    mqtt_request_header_s *headerReq = NULL;  //请求报文头
-    mqtt_reply_header_s *headerRly = NULL;    //应答报文头
+    mqtt_request_header_s *header_request = NULL;   // 请求报文头
+    mqtt_reply_header_s *header_reply = NULL;       // 应答报文头
     json_t *param = NULL;
     uint8_t type = 0;
-    char    msgType[32];
+    char msg_type[DATA_BUF_F32_SIZE] = { 0 };
     char *srt_pram = NULL;
-    int32_t midID;
+    int32_t mid_id;
     json_t *root = NULL;
-    if (strlen(item->msg_send) != 0) {
-        printf("***msg_send = %s\n", item->msg_send);  //打印一下接收到的信息  
+    if (item == NULL) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_topic_data_unpack item failed.\n");
+        return;
     }
+
     root = load_json(item->msg_send);
-    if (NULL != root) {
-        type = msg_parse(root);     //判断消息类型：根据是否有code判断是请求帧还是应答帧
+    if (root != NULL) {
+        type = msg_parse(root);     // 判断消息类型：根据是否有code判断是请求帧还是应答帧
     }
-    if (type == TYPE_REQUEST) {     //请求
-        printf("******************request********************\n");
-        headerReq = sg_unpack_json_msg_header_request(root);
-        param = headerReq->param;
-        memcpy_s(msgType, 32, headerReq->type, strlen(headerReq->type));
-        midID = headerReq->mid;
-        if (headerReq != NULL) {
-            VOS_Free(headerReq);
-            headerReq = NULL;
-        }
-    } else if (type == TYPE_REPLY) {  //应答 
-        printf("******************reply********************\n");
-        headerRly = sg_unpack_json_msg_header_reply(root);
-        param = headerRly->param;
-        memcpy_s(msgType, 32, headerRly->type, strlen(headerRly->type) + 1);
-        midID = headerRly->mid;
-        if (headerRly != NULL) {
-            VOS_Free(headerRly);
-            headerRly = NULL;
-        }
+
+    mid_id = sg_get_json_content_heaser(type, msg_type, param);
+
+    if (param != NULL) {
+        srt_pram = json_dumps(param, JSON_PRESERVE_ORDER);                                                      // 分配内存
     }
-    srt_pram = json_dumps(param, JSON_PRESERVE_ORDER);                          //会分配内存,内存申请函数为malloc,释放的时候需要用free
 
-    if (0 == strncmp(item->pubtopic, get_topic_sub_dev_com(), strlen(get_topic_sub_dev_com()))) {         //设备控制命令
-        (void)sg_dev_com_data_unpack(srt_pram, msgType, midID);
-
-    } else if (0 == strncmp(item->pubtopic, get_topic_sub_dev_res(), strlen(get_topic_sub_dev_res()))) {    //设备请求命令
-        (void)sg_dev_res_data_unpack(srt_pram, msgType);
-
-    } else if (0 == strncmp(item->pubtopic, get_topic_sub_ctai_com(), strlen(get_topic_sub_ctai_com()))) {  //容器控制请求命令
-        (void)sg_ctai_com_data_unpack(srt_pram, msgType, midID);
-
-    } else if (0 == strncmp(item->pubtopic, get_topic_sub_app_com(), strlen(get_topic_sub_app_com()))) {     //app控制请求命令
-        (void)sg_app_com_data_unpack(srt_pram, msgType, midID);
-
+    if (strncmp(item->pub_topic, get_topic_sub_dev_com(), strlen(get_topic_sub_dev_com())) == 0) {              // 设备控制命令
+        (void)sg_dev_com_data_unpack(srt_pram, msg_type, mid_id);
+    } else if (strncmp(item->pub_topic, get_topic_sub_dev_res(), strlen(get_topic_sub_dev_res())) == 0) {       // 设备请求命令
+        (void)sg_dev_res_data_unpack(srt_pram, msg_type);
+    } else if (strncmp(item->pub_topic, get_topic_sub_ctai_com(), strlen(get_topic_sub_ctai_com())) == 0) {     // 容器控制请求命令
+        (void)sg_container_com_data_unpack(srt_pram, msg_type, mid_id);
+    } else if (strncmp(item->pub_topic, get_topic_sub_app_com(), strlen(get_topic_sub_app_com())) == 0) {       // app控制请求命令
+        (void)sg_app_com_data_unpack(srt_pram, msg_type, mid_id);
     }
-    if (NULL != root) {
-        json_decref(root);//会将所有的子节点都free
+
+    if (root != NULL) {
+        (void)json_decref(root);
     }
-    // if (srt_pram != NULL) {
-    //     free(srt_pram);
-    //     srt_pram = NULL;
-    // } 
+
 }
 
 void set_device_upgrade_status(dev_status_reply_s sta)
@@ -406,41 +462,46 @@ void set_app_upgrade_status(dev_status_reply_s sta)
     app_upgrade_status = sta;
 }
 
-int bus_inter_thread(void) //业务交互线程
+// 业务交互线程
+int sg_bus_inter_thread(void)
 {
-    printf("bus_inter_thread start . \n");
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "business interaction task thread start.\n");
     int bRet = 0;
+    int connect_flag;
     VOS_UINT32 freeRet = 0;
-    uint32_t unpack_queue_id = sg_get_que_unpack_id();      //获取队列id
+    uint32_t unpack_queue_id = sg_get_que_unpack_id();      // 获取队列id
     VOS_UINTPTR msg[VOS_QUEUE_MSG_NUM] = { 0 };
-
+    sg_dev_param_info_s param = sg_get_param();
     mqtt_data_info_s *item = NULL;
-    // uint32_t msgType = 0;
     for (; ;) {
-        if (sg_get_mqtt_connect_flag() == DEVICE_OFFLINE) {
-            VOS_T_Delay(3 * 1000);
+        if (param.startmode == MODE_RMTMAN) {
+            connect_flag = sg_get_mqtt_connect_flag();  // 更换rmtman 与平台连接标志判断，socket 连接状态判断
+        } else {
+            connect_flag = sg_get_mqtt_connect_flag();
+        }
+
+        if (connect_flag == DEVICE_OFFLINE) {
+            (void)VOS_T_Delay(MS_BUS_THREAD_CONNECT_WAIT);
             continue;
         }
+
         if (VOS_OK == VOS_Que_Read(unpack_queue_id, msg, VOS_WAIT, 0)) {
             switch (msg[0]) {
             case QUEUE_UNPACK:
                 item = (mqtt_data_info_s *)(msg[1]);
-                printf("megsky --test：unpack_queue  pubtopic. ==%s \n", item->pubtopic);
+                SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "unpack_queue : topic(%s). \n", item->pub_topic);
                 (void)sg_topic_data_unpack(item);
-
-                freeRet = VOS_Free(item);
-                if (freeRet != VOS_OK) {
-                    printf("bus_inter_thread VOS_Free fail \n");
+                if (item != NULL) {
+                    (void)VOS_Free(item);
                 }
                 break;
             default:
                 break;
             }
         }
-        VOS_T_Delay(10);
+
+        (void)VOS_T_Delay(MS_TEN_INTERVAL);
     }
     return bRet;
 }
-
-
 

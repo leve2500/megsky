@@ -38,10 +38,10 @@ typedef struct dev_usage_status_reply {
 }dev_usage_status_s;
 
 //设备升级命令  略过 未加返回值
-int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s cmdobj)
+int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s *cmd_obj)
 {
     dev_status_reply_s status;
-    status.jobId = cmdobj.jobId;
+    status.jobId = cmd_obj->jobId;
     status.progress = 0;
     status.state = STATUS_PRE_DOWNLOAD;
     set_device_upgrade_status(status);		//设置开始状态
@@ -71,7 +71,7 @@ int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s cmdobj)
     }
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
     sg_pack_dev_install_cmd(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);        //回答入列
 
@@ -80,10 +80,10 @@ int sg_handle_dev_install_cmd(int32_t mid, device_upgrade_s cmdobj)
     //下载升级文件
 
     //判断操作类型
-    if (cmdobj.upgradeType == UPGRADEPACH) {
-        sg_down_update_patch(cmdobj, errormsg);
-    } else if (cmdobj.upgradeType == UPGRADEHOST) {
-        sg_down_update_host(cmdobj, errormsg);
+    if (cmd_obj.upgradeType == UPGRADEPACH) {
+        sg_down_update_patch(cmd_obj, errormsg);
+    } else if (cmd_obj.upgradeType == UPGRADEHOST) {
+        sg_down_update_host(cmd_obj, errormsg);
     }
     if (code != REQUEST_SUCCESS) {
         sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
@@ -231,7 +231,7 @@ int sg_handle_dev_inquire_reply(int32_t mid)
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
     sg_pack_dev_run_status(&dev_sta_rep_item, NULL, item->msg_send);  //NULL 不传msg
     sg_push_pack_item(item);        //入列
     return VOS_OK;
@@ -353,7 +353,7 @@ int sg_handle_dev_inquire_cmd(int32_t mid)
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
     sg_pack_dev_run_status_reply(code, mid, errormsg, &dev_sta_rep_item, item->msg_send);
     sg_push_pack_item(item);        //入列
     return VOS_OK;
@@ -408,7 +408,7 @@ int sg_handle_dev_info_cmd(int32_t mid)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
 
     sg_pack_dev_info_reply(code, mid, errormsg, &dev_info_inq_reply_item, item->msg_send);
     sg_push_pack_item(item);                                                    //入列
@@ -524,7 +524,7 @@ int sg_handle_dev_set_para_cmd(int32_t mid, dev_man_conf_command_s paraobj)    /
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
     sg_pack_dev_set_para_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);        //入列
     return VOS_OK;
@@ -562,7 +562,7 @@ int sg_handle_dev_set_time_cmd(int32_t mid, dev_time_command_s *timeobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
 
     sg_pack_dev_set_time_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
@@ -586,7 +586,7 @@ void sg_handle_dev_log_cmd(int32_t mid, dev_log_recall_s logobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
 
     sg_pack_dev_log_reply(code, mid, errormsg, &fileinfo, item->msg_send);
     sg_push_pack_item(item);
@@ -608,7 +608,7 @@ int sg_handle_dev_ctrl_cmd(int32_t mid, char *action)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_reply_pub());
 
     sg_pack_dev_ctrl_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
@@ -626,7 +626,7 @@ int sg_handle_dev_ctrl_cmd(int32_t mid, char *action)
 }
 
 //容器安装控制  
-void sg_handle_container_install_cmd(int32_t mid, container_install_cmd_s cmdobj)
+void sg_handle_container_install_cmd(int32_t mid, container_install_cmd_s cmd_obj)
 {
     bool app_flag = false;
     mqtt_data_info_s *item = NULL;
@@ -639,18 +639,18 @@ void sg_handle_container_install_cmd(int32_t mid, container_install_cmd_s cmdobj
     set_container_install_status(status);
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
-    if (strlen(cmdobj.withAPP.version) != 0) {
+    if (strlen(cmd_obj.withAPP.version) != 0) {
         app_flag = true;
 
         item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
         (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-        sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+        sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
 
         sg_pack_container_install_cmd(code, mid, errormsg, item->msg_send);
         sg_push_pack_item(item);
         status.state = STATUS_EXE_DOWNLOAD;
         set_container_install_status(status);
-        if (sg_file_download(cmdobj.withAPP.file, statusobj.msg) != VOS_OK) {
+        if (sg_file_download(cmd_obj.withAPP.file, statusobj.msg) != VOS_OK) {
             code = REQUEST_NOTEXITS;
             statusobj.code = REQUEST_NOTEXITS;
         }
@@ -658,20 +658,20 @@ void sg_handle_container_install_cmd(int32_t mid, container_install_cmd_s cmdobj
     status.state = STATUS_EXE_DOWNLOAD;
     set_container_install_status(status);
 
-    if (sg_file_download(cmdobj.image, statusobj.msg) != VOS_OK) {
+    if (sg_file_download(cmd_obj.image, statusobj.msg) != VOS_OK) {
         code = REQUEST_NOTEXITS;
         statusobj.code = REQUEST_NOTEXITS;
     }
-    if (cmdobj.policy > 0) {
+    if (cmd_obj.policy > 0) {
         //添加至任务表
         return;
     }
-    if (sg_container_install(&cmdobj, statusobj.msg) != VOS_OK) {
+    if (sg_container_install(&cmd_obj, statusobj.msg) != VOS_OK) {
         code = REQUEST_FAILED;
         statusobj.code = REQUEST_FAILED;
     }
     if (app_flag) {
-        if (sg_container_with_app_install(&cmdobj, statusobj.msg)) {            //安装指定APP
+        if (sg_container_with_app_install(&cmd_obj, statusobj.msg)) {            //安装指定APP
             code = REQUEST_FAILED;
             statusobj.code = REQUEST_FAILED;
         }
@@ -682,7 +682,7 @@ void sg_handle_container_install_cmd(int32_t mid, container_install_cmd_s cmdobj
     mqtt_data_info_s *sitem = NULL;
     sitem = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(sitem, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(sitem->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_data_pub());
+    sprintf_s(sitem->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_data_pub());
     sg_pack_dev_install_result(statusobj, errormsg, sitem->msg_send);    //发送结果
     sg_push_pack_item(sitem);
 }
@@ -708,7 +708,7 @@ int sg_handle_container_start_cmd(int32_t mid, char *container_name)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
 
     sg_pack_container_start_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
@@ -735,7 +735,7 @@ int sg_handle_container_stop_cmd(int32_t mid, char *container_name)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
 
     sg_pack_container_stop_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
@@ -762,7 +762,7 @@ int sg_handle_container_delete_cmd(int32_t mid, char *container_name)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
 
     sg_pack_container_remove_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
@@ -771,28 +771,28 @@ int sg_handle_container_delete_cmd(int32_t mid, char *container_name)
 /**
  * sg_get_container_modify_mount
  * 功能：获取mount函数
- * 传入：container_conf_cmd_s *cmdobj
+ * 传入：container_conf_cmd_s *cmd_obj
  * 传出：container_mount_dir_add_s *mount_info
  * 返回值：int
  */
-static int sg_get_container_modify_mount(container_conf_cmd_s *cmdobj, container_mount_dir_add_s *mount_info)
+static int sg_get_container_modify_mount(container_conf_cmd_s *cmd_obj, container_mount_dir_add_s *mount_info)
 {
     int ret                    = VOS_OK;
     int i                      = 0;
     char left_obj[DATA_BUF_F64_SIZE]  = { 0 };
     char right_obj[DATA_BUF_F64_SIZE] = { 0 };
-    if (cmdobj->mount_len > 0) {                                                                                        // mount赋值
-        mount_info->num = cmdobj->mount_len;
+    if (cmd_obj->mount_len > 0) {                                                                                        // mount赋值
+        mount_info->num = cmd_obj->mount_len;
         mount_info->add_type = MOUNT_DIR_ADD_OVERWRITE;
-        mount_info->mount_dir = (mount_dir_cfg_s*)VOS_Malloc(MID_SGDEV, sizeof(mount_dir_cfg_s) * cmdobj->mount_len);   // 记得释放
+        mount_info->mount_dir = (mount_dir_cfg_s*)VOS_Malloc(MID_SGDEV, sizeof(mount_dir_cfg_s) * cmd_obj->mount_len);   // 记得释放
         if (mount_info->mount_dir == NULL) {
             (void)printf("mount_info->mount_dir VOS_Malloc error!\n");
             return VOS_ERR;
         }
-        (void)memset_s(mount_info->mount_dir, sizeof(mount_dir_cfg_s) * cmdobj->mount_len, 0,
-                sizeof(mount_dir_cfg_s) * cmdobj->mount_len);
-        for (i = 0; i < cmdobj->mount_len; i++) {
-            if (sg_str_colon(cmdobj->mount[i], strlen(cmdobj->mount[i]), left_obj, right_obj) != VOS_OK) {
+        (void)memset_s(mount_info->mount_dir, sizeof(mount_dir_cfg_s) * cmd_obj->mount_len, 0,
+                sizeof(mount_dir_cfg_s) * cmd_obj->mount_len);
+        for (i = 0; i < cmd_obj->mount_len; i++) {
+            if (sg_str_colon(cmd_obj->mount[i], strlen(cmd_obj->mount[i]), left_obj, right_obj) != VOS_OK) {
                 (void)printf("sg_str_colon error\n");
                 return VOS_ERR;
             }
@@ -807,28 +807,28 @@ static int sg_get_container_modify_mount(container_conf_cmd_s *cmdobj, container
 /**
  * sg_get_container_modify_dev
  * 功能：获取dev函数
- * 传入：container_conf_cmd_s *cmdobj
+ * 传入：container_conf_cmd_s *cmd_obj
  * 传出：install_map_dev *dev_info
  * 返回值：int
  */
-static int sg_get_container_modify_dev(container_conf_cmd_s *cmdobj, install_map_dev *dev_info)
+static int sg_get_container_modify_dev(container_conf_cmd_s *cmd_obj, install_map_dev *dev_info)
 {
     int ret                    = VOS_OK;
     int i                      = 0;
     char left_obj[DATA_BUF_F64_SIZE]  = { 0 };
     char right_obj[DATA_BUF_F64_SIZE] = { 0 };
-    if (cmdobj->dev_len > 0) {                                                                                          // dev赋值
-        dev_info->dev_num = cmdobj->dev_len;
+    if (cmd_obj->dev_len > 0) {                                                                                          // dev赋值
+        dev_info->dev_num = cmd_obj->dev_len;
         dev_info->dev_list = (install_dev_node*)VOS_Malloc(MID_SGDEV, 
-                sizeof(install_dev_node) * cmdobj->dev_len);                                                            // 记得释放
+                sizeof(install_dev_node) * cmd_obj->dev_len);                                                            // 记得释放
         if (dev_info->dev_list == NULL) {
             (void)printf("dev_info->dev_list VOS_Malloc error!\n");
             return VOS_ERR;
         }
-        (void)memset_s(dev_info->dev_list, sizeof(install_dev_node) * cmdobj->dev_len, 0,
-                 sizeof(install_dev_node) * cmdobj->dev_len);
-        for (i = 0; i < cmdobj->dev_len; i++) {
-            if (sg_str_colon(cmdobj->dev[i], strlen(cmdobj->dev[i]), left_obj, right_obj) != VOS_OK) {
+        (void)memset_s(dev_info->dev_list, sizeof(install_dev_node) * cmd_obj->dev_len, 0,
+                 sizeof(install_dev_node) * cmd_obj->dev_len);
+        for (i = 0; i < cmd_obj->dev_len; i++) {
+            if (sg_str_colon(cmd_obj->dev[i], strlen(cmd_obj->dev[i]), left_obj, right_obj) != VOS_OK) {
                 (void)printf("sg_str_colon error\n");
                 return VOS_ERR;
             }
@@ -842,7 +842,7 @@ static int sg_get_container_modify_dev(container_conf_cmd_s *cmdobj, install_map
 }
 
 // 容器配置修改处理函数
-static int sg_container_modify_north(container_conf_cmd_s *cmdobj) 
+static int sg_container_modify_north(container_conf_cmd_s *cmd_obj) 
 {
     int ret                                  = VOS_OK;
     int cpus                                 = 0;
@@ -853,7 +853,7 @@ static int sg_container_modify_north(container_conf_cmd_s *cmdobj)
     char errRet[VM_RET_STRING_SIZE]          = { 0 };
     INSTALL_OVA_PARA_NORTH_SG_S install_info = { 0 };
 
-    container_len = strlen(cmdobj->container) + 1;
+    container_len = strlen(cmd_obj->container) + 1;
     (void)printf("container_len = %d\n", container_len);
     install_info.container_name = (char*)VOS_Malloc(MID_SGDEV, sizeof(char) * container_len);
     if (install_info.container_name == NULL) {
@@ -861,20 +861,20 @@ static int sg_container_modify_north(container_conf_cmd_s *cmdobj)
         return VOS_ERR;
     }
     (void)memset_s(install_info.container_name, sizeof(char) * container_len, 0, sizeof(char) * container_len);
-    memcpy_s(install_info.container_name, sizeof(char) * container_len, cmdobj->container, strlen(cmdobj->container));  // 容器名称赋值
-    cpus = cmdobj->cfgCpu.cpus;
+    memcpy_s(install_info.container_name, sizeof(char) * container_len, cmd_obj->container, strlen(cmd_obj->container));  // 容器名称赋值
+    cpus = cmd_obj->cfgCpu.cpus;
     install_info.cpu_mask = 0;
     for (i = 0; i < cpus; i++) {
         install_info.cpu_mask |= i;                                                                                     // cpu核数赋值
     }
-    install_info.cpu_threshold = cmdobj->cfgCpu.cpuLmt;                                                                 // cpu监控阈值赋值
-    install_info.mem_size = cmdobj->cfgMem.memory;                                                                      // 内存限值赋值
-    install_info.mem_threshold = cmdobj->cfgMem.memLmt;                                                                 // 内存监控阈值赋值
-    install_info.disk_size = cmdobj->cfgDisk.disk;                                                                      // 存储限值赋值
-    install_info.disk_threshold = cmdobj->cfgDisk.diskLmt;                                                              // 磁盘存储监控阈值赋值
+    install_info.cpu_threshold = cmd_obj->cfgCpu.cpuLmt;                                                                 // cpu监控阈值赋值
+    install_info.mem_size = cmd_obj->cfgMem.memory;                                                                      // 内存限值赋值
+    install_info.mem_threshold = cmd_obj->cfgMem.memLmt;                                                                 // 内存监控阈值赋值
+    install_info.disk_size = cmd_obj->cfgDisk.disk;                                                                      // 存储限值赋值
+    install_info.disk_threshold = cmd_obj->cfgDisk.diskLmt;                                                              // 磁盘存储监控阈值赋值
 
-    if (strlen(cmdobj->port) != 0) {                                                                                    // port赋值
-        if (sg_str_colon(cmdobj->port, strlen(cmdobj->port), left_obj, right_obj) != VOS_OK) {
+    if (strlen(cmd_obj->port) != 0) {                                                                                    // port赋值
+        if (sg_str_colon(cmd_obj->port, strlen(cmd_obj->port), left_obj, right_obj) != VOS_OK) {
             (void)printf("sg_str_colon error\n");
             return VOS_ERR;
         }
@@ -891,11 +891,11 @@ static int sg_container_modify_north(container_conf_cmd_s *cmdobj)
     printf("install_info.port_map.port_node[0].host_port            = %d\n", install_info.port_map.port_node[0].host_port);
     printf("install_info.port_map.port_node[0].container_port       = %d\n", install_info.port_map.port_node[0].container_port);
 
-    if (sg_get_container_modify_mount(cmdobj, &install_info.mount_dir_add) != VOS_OK) {                                 //获取mount
+    if (sg_get_container_modify_mount(cmd_obj, &install_info.mount_dir_add) != VOS_OK) {                                 //获取mount
         (void)printf("sg_get_container_modify_mount error!\n");
         ret = VOS_ERR;
     }
-    if (sg_get_container_modify_dev(cmdobj, &install_info.dev_map) != VOS_OK) {                                         //获取dev
+    if (sg_get_container_modify_dev(cmd_obj, &install_info.dev_map) != VOS_OK) {                                         //获取dev
         (void)printf("sg_get_container_modify_dev error!\n");
         ret = VOS_ERR;
     }
@@ -913,7 +913,7 @@ static int sg_container_modify_north(container_conf_cmd_s *cmdobj)
 }
 
 //容器配置修改
-int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj)   //cmdobj为传入
+int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmd_obj)   //cmd_obj为传入
 {
     int ret = 0;
     mqtt_data_info_s *item = NULL;
@@ -925,7 +925,7 @@ int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj)
     //中间件执行
     //资源设置接口，不需要重启容器：
 
-    if (sg_container_modify_north(cmdobj) != VOS_OK) {
+    if (sg_container_modify_north(cmd_obj) != VOS_OK) {
         printf("vm_rpc_container_status error!\n");
         code = REQUEST_FAILED;
         ret = VOS_ERR;
@@ -936,7 +936,7 @@ int sg_handle_container_param_set_cmd(int32_t mid, container_conf_cmd_s *cmdobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
     sg_pack_container_param_set_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
     return ret;
@@ -1153,7 +1153,7 @@ int sg_handle_container_param_get(int32_t mid)
         sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
 
     sg_pack_container_param_get_reply(code, mid, errormsg, &contiainer_config_reply, item->msg_send);
     sg_push_pack_item(item);
@@ -1262,7 +1262,7 @@ int sg_handle_container_status_get(char *type, int32_t mid)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
 
     if (sg_pack_container_status_get_reply(type, code, mid, errormsg, status, item->msg_send) != VOS_OK) {
         ssp_syslog(LOG_INFO, SYSLOG_LOG, SGDEV_MODULE, "ssp_syslog sg_pack_container_status_get_reply error !\n");
@@ -1277,7 +1277,7 @@ int sg_handle_container_status_get(char *type, int32_t mid)
 }
 
 //容器升级  先忽略
-void sg_handle_container_upgrade_cmd(int32_t mid, container_upgrade_cmd_s cmdobj)
+void sg_handle_container_upgrade_cmd(int32_t mid, container_upgrade_cmd_s cmd_obj)
 {
     mqtt_data_info_s *item = NULL;
     uint16_t code = REQUEST_SUCCESS;
@@ -1290,28 +1290,28 @@ void sg_handle_container_upgrade_cmd(int32_t mid, container_upgrade_cmd_s cmdobj
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
 
     sg_pack_container_upgrade_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
 
     //中间件执行
-    // cmdobj.jobId = 
-    // cmdobj.policy = 
-    // cmdobj.version = 
-    // cmdobj.file.name = 
-    // cmdobj.file.fileType = 
-    // cmdobj.file.url = 
-    // cmdobj.file.size = 
-    // cmdobj.file.md5 = 
-    // cmdobj.file.sign.name = 
-    // cmdobj.file.sign.url = 
-    // cmdobj.file.sign.size = 
-    // cmdobj.file.sign.md5 = 
+    // cmd_obj.jobId = 
+    // cmd_obj.policy = 
+    // cmd_obj.version = 
+    // cmd_obj.file.name = 
+    // cmd_obj.file.fileType = 
+    // cmd_obj.file.url = 
+    // cmd_obj.file.size = 
+    // cmd_obj.file.md5 = 
+    // cmd_obj.file.sign.name = 
+    // cmd_obj.file.sign.url = 
+    // cmd_obj.file.sign.size = 
+    // cmd_obj.file.sign.md5 = 
 }
 
 //容器日志召回
-int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmdobj)
+int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmd_obj)
 {
     int ret = VOS_OK;
     uint16_t code = REQUEST_SUCCESS;
@@ -1329,16 +1329,16 @@ int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmd
         code = REQUEST_FAILED;
         ret = VOS_ERR;
     }
-    ret = app_management_status_call_get_app_log(cmdobj->container, "all", unsigned long start_time, unsigned long end_time, char *errmsg);  //时间设置翟工建议 开始时间为容器安装时间   结束时间为当前时间
+    ret = app_management_status_call_get_app_log(cmd_obj->container, "all", unsigned long start_time, unsigned long end_time, char *errmsg);  //时间设置翟工建议 开始时间为容器安装时间   结束时间为当前时间
     appm_rpc_transport_close();
     if (ret != VOS_OK) {
         printf("app_management_status_call_get_app_info error! \n");
         ret = VOS_ERR;
     }
-    (void)sprintf_s(fileinfo.name, DATA_BUF_F64_SIZE, "{%s}.log", cmdobj->container);
+    (void)sprintf_s(fileinfo.name, DATA_BUF_F64_SIZE, "{%s}.log", cmd_obj->container);
 //    fileinfo.fileType = 
-    memcpy_s(fileinfo.url, DATA_BUF_F64_SIZE, cmdobj->url, strlen(cmdobj->url));
-    (void)sprintf_s(file_road, DATA_BUF_F256_SIZE, "/run/shm/appm/{%s}/app_log_dir", cmdobj->container);
+    memcpy_s(fileinfo.url, DATA_BUF_F64_SIZE, cmd_obj->url, strlen(cmd_obj->url));
+    (void)sprintf_s(file_road, DATA_BUF_F256_SIZE, "/run/shm/appm/{%s}/app_log_dir", cmd_obj->container);
     fileinfo.size = getfilesize(file_road);
     //MD5
         printf("sgdevagent**** : fileinfo.md5 = %s.\n", fileinfo.md5);
@@ -1351,14 +1351,14 @@ int sg_handle_container_log_get_cmd(int32_t mid, container_log_recall_cmd_s *cmd
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_container_reply_pub());
     sg_pack_container_log_get_reply(code, mid, errormsg, &fileinfo, item->msg_send);
     sg_push_pack_item(item);
     return ret;
 }
 
 //应用安装控制
-void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmdobj)
+void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmd_obj)
 {
     printf("sgdevagent**** : sg_handle_app_install_cmd  mid= %d.\n", mid);
     mqtt_data_info_s *item = NULL;
@@ -1368,8 +1368,8 @@ void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmdobj)
     dev_status_reply_s status = { 0 };
     dev_upgrede_res_reply_s statusobj = { 0 };
 
-    statusobj.jobId = cmdobj.jobId;
-    status.jobId = cmdobj.jobId;
+    statusobj.jobId = cmd_obj.jobId;
+    status.jobId = cmd_obj.jobId;
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
     status.state = STATUS_PRE_DOWNLOAD;
@@ -1377,25 +1377,25 @@ void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmdobj)
 
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
     sg_pack_app_install_cmd(code, mid, errormsg, item->msg_send);    //收到命令先返回
     sg_push_pack_item(item);
 
     code = REQUEST_SUCCESS;
     status.state = STATUS_EXE_DOWNLOAD;
     set_app_install_status(status);		//设置正在下载
-    printf("sgdevagent**** : sg_file_download  cmdobj.file= %s.\n", cmdobj.file);
-    if (sg_file_download(cmdobj.file, statusobj.msg) != VOS_OK) {
+    printf("sgdevagent**** : sg_file_download  cmd_obj.file= %s.\n", cmd_obj.file);
+    if (sg_file_download(cmd_obj.file, statusobj.msg) != VOS_OK) {
         code = REQUEST_NOTEXITS;
         statusobj.code = REQUEST_NOTEXITS;
     }
     status.state = STATUS_PRE_INSTALL;
     set_app_install_status(status);		//开始安装
-    if (cmdobj.policy > 0) { //需要开启另外的线程吗？ 重开定时器 		//向线程发送任务
+    if (cmd_obj.policy > 0) { //需要开启另外的线程吗？ 重开定时器 		//向线程发送任务
         return;
-        VOS_T_Delay(cmdobj.policy * 1000);
+        VOS_T_Delay(cmd_obj.policy * 1000);
     }
-    if (sg_app_install(cmdobj, statusobj.msg) != VOS_OK) {
+    if (sg_app_install(cmd_obj, statusobj.msg) != VOS_OK) {
         code = REQUEST_REFUSE;
         statusobj.code = REQUEST_REFUSE;
     }
@@ -1405,12 +1405,12 @@ void sg_handle_app_install_cmd(int32_t mid, app_install_cmd_s cmdobj)
     mqtt_data_info_s *sitem = NULL;
     sitem = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(sitem, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(sitem->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_data_pub());
+    sprintf_s(sitem->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_data_pub());
     sg_pack_dev_install_result(statusobj, errormsg, sitem->msg_send);    //发送结果
     sg_push_pack_item(sitem);
 }
 //应用启动
-int sg_handle_app_start_cmd(int32_t mid, app_control_cmd_s *cmdobj)
+int sg_handle_app_start_cmd(int32_t mid, app_control_cmd_s *cmd_obj)
 {
     int ret = VOS_OK;
     mqtt_data_info_s *item = NULL;
@@ -1420,8 +1420,8 @@ int sg_handle_app_start_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     char errormsg[DATA_BUF_F256_SIZE];
 
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
-    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->container, strlen(cmdobj->container));
-    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmdobj->app, strlen(cmdobj->app));
+    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmd_obj->container, strlen(cmd_obj->container));
+    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmd_obj->app, strlen(cmd_obj->app));
     //中间件执行
     if (appm_rpc_transport_open() != VOS_OK) {
         code = REQUEST_FAILED;
@@ -1435,14 +1435,14 @@ int sg_handle_app_start_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
     sg_pack_app_start_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
     return ret;
 }
 //应用停止
-void sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmdobj)
+void sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmd_obj)
 {
     int ret = 0;
     mqtt_data_info_s *item = NULL;
@@ -1452,8 +1452,8 @@ void sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     char errormsg[DATA_BUF_F256_SIZE];
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
     //中间件执行
-    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->container, strlen(cmdobj->container));
-    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmdobj->app, strlen(cmdobj->app));
+    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmd_obj->container, strlen(cmd_obj->container));
+    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmd_obj->app, strlen(cmd_obj->app));
     if (appm_rpc_transport_open() != VOS_OK) {
         code = REQUEST_FAILED;
         ret = VOS_ERR;
@@ -1466,14 +1466,14 @@ void sg_handle_app_stop_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
     sg_pack_app_stop_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
     return ret;
 }
 //应用卸载
-void sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj)
+void sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmd_obj)
 {
     int ret = 0;
     mqtt_data_info_s *item = NULL;
@@ -1483,8 +1483,8 @@ void sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     char errormsg[DATA_BUF_F256_SIZE];
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
     //中间件执行
-    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->container, strlen(cmdobj->container));
-    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmdobj->app, strlen(cmdobj->app));
+    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmd_obj->container, strlen(cmd_obj->container));
+    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmd_obj->app, strlen(cmd_obj->app));
     if (appm_rpc_transport_open() != VOS_OK) {
         code = REQUEST_FAILED;
         ret = VOS_ERR;
@@ -1497,14 +1497,14 @@ void sg_handle_app_uninstall_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
     sg_pack_app_uninstall_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
     return ret;
 }
 //应用使能
-void sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
+void sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmd_obj)
 {
     int ret = 0;
     mqtt_data_info_s *item = NULL;
@@ -1514,8 +1514,8 @@ void sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     char errormsg[DATA_BUF_F256_SIZE];
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
     //中间件执行
-    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->container, strlen(cmdobj->container));
-    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmdobj->app, strlen(cmdobj->app));
+    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmd_obj->container, strlen(cmd_obj->container));
+    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmd_obj->app, strlen(cmd_obj->app));
     if (appm_rpc_transport_open() != VOS_OK) {
         code = REQUEST_FAILED;
         ret = VOS_ERR;
@@ -1528,12 +1528,12 @@ void sg_handle_app_enble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
     sg_pack_app_enable_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
 }
 //应用去使能
-void sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
+void sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmd_obj)
 {
     int ret = VOS_OK;
     mqtt_data_info_s *item = NULL;
@@ -1543,8 +1543,8 @@ void sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     char errormsg[DATA_BUF_F256_SIZE];
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
     //中间件执行
-    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->container, strlen(cmdobj->container));
-    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmdobj->app, strlen(cmdobj->app));
+    memcpy_s(para.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmd_obj->container, strlen(cmd_obj->container));
+    memcpy_s(para.app_name, APP_MANAGEMENT_APP_NAME_MAX_LEN + 1, cmd_obj->app, strlen(cmd_obj->app));
     if (appm_rpc_transport_open() != VOS_OK) {
         code = REQUEST_FAILED;
         ret = VOS_ERR;
@@ -1557,7 +1557,7 @@ void sg_handle_app_unenble_cmd(int32_t mid, app_control_cmd_s *cmdobj)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
     sg_pack_app_unenble_reply(code, mid, errormsg, item->msg_send);
     sg_push_pack_item(item);
@@ -1588,7 +1588,7 @@ static int sg_appm_modify_app_info_cmd(APPM_OPERATION_PARA *para)
 
 
 //应用配置修改
-int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmdobj)
+int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmd_obj)
 {
     int ret = VOS_OK;
     int cpus = 0, i;
@@ -1599,23 +1599,23 @@ int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmdobj)
     mqtt_data_info_s *item          = NULL;
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
-    memcpy_s(para_obj.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->container, strlen(cmdobj->container));
-    memcpy_s(para_obj.app_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmdobj->app, strlen(cmdobj->app));
-    cpus = cmdobj->cfgCpu.cpus;
+    memcpy_s(para_obj.lxc_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmd_obj->container, strlen(cmd_obj->container));
+    memcpy_s(para_obj.app_name, APP_MANAGEMENT_LXC_NAME_MAX_LEN + 1, cmd_obj->app, strlen(cmd_obj->app));
+    cpus = cmd_obj->cfgCpu.cpus;
     para_obj.cpu_mask = 0;
     for (i = 0; i < cpus; i++) {
         para_obj.cpu_mask |= i;
     }
-    para_obj.cpu_threshold = cmdobj->cfgCpu.cpuLmt;
-    para_obj.memory_limit = cmdobj->cfgMem.memory;
-    para_obj.memory_threshold = cmdobj->cfgMem.memLmt;
+    para_obj.cpu_threshold = cmd_obj->cfgCpu.cpuLmt;
+    para_obj.memory_limit = cmd_obj->cfgMem.memory;
+    para_obj.memory_threshold = cmd_obj->cfgMem.memLmt;
     if (sg_appm_modify_app_info_cmd(&para_obj) != VOS_OK) {
         code = REQUEST_FAILED;
         ret = VOS_ERR;
     }
     printf("para_obj.lxc_name           = %s\n", para_obj.lxc_name);
     printf("para_obj.app_name           = %s\n", para_obj.app_name);
-    printf("cmdobj->cfgCpu.cpus         = %d\n", cmdobj->cfgCpu.cpus);
+    printf("cmd_obj->cfgCpu.cpus         = %d\n", cmd_obj->cfgCpu.cpus);
     printf("para_obj.cpu_mask           = %lu\n", para_obj.cpu_mask);
     printf("para_obj.cpu_threshold      = %d\n", para_obj.cpu_threshold);
     printf("para_obj.memory_limit       = %d\n", para_obj.memory_limit);
@@ -1623,7 +1623,7 @@ int sg_handle_app_param_set_cmd(int32_t mid, app_conf_cmd_s *cmdobj)
 
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
     //中间件执行
     if (code != REQUEST_SUCCESS) {
@@ -1687,7 +1687,7 @@ void sg_handle_app_param_get(int32_t mid, char *container_name)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
     sg_pack_app_param_get_reply(code, mid, errormsg, &statusobj, item->msg_send);
     VOS_Free(statusobj.appCfgs); //释放
@@ -1802,7 +1802,7 @@ void sg_handle_app_status_get(int32_t mid, char *container_name)
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
     sg_pack_app_status_get_reply(code, mid, errormsg, &statusobj, item->msg_send);
     VOS_Free(statusobj.apps[num].process);
     statusobj.apps[num].process = NULL;
@@ -1812,7 +1812,7 @@ void sg_handle_app_status_get(int32_t mid, char *container_name)
 
 }
 //应用升级  
-void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmdobj)
+void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmd_obj)
 {
     printf("sgdevagent**** : sg_handle_app_upgrade_cmd  mid= %d.\n", mid);
     mqtt_data_info_s *item = NULL;
@@ -1822,8 +1822,8 @@ void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmdobj)
     dev_status_reply_s status = { 0 };
     dev_upgrede_res_reply_s statusobj = { 0 };
 
-    statusobj.jobId = cmdobj.jobId;
-    status.jobId = cmdobj.jobId;
+    statusobj.jobId = cmd_obj.jobId;
+    status.jobId = cmd_obj.jobId;
     sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "command success");
 
     status.state = STATUS_PRE_DOWNLOAD;
@@ -1831,25 +1831,25 @@ void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmdobj)
 
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
     sg_pack_app_upgrade_cmd(code, mid, errormsg, item->msg_send);    //收到命令先返回
     sg_push_pack_item(item);
 
     code = REQUEST_SUCCESS;
     status.state = STATUS_EXE_DOWNLOAD;
     set_app_upgrade_status(status);		//设置正在下载
-    printf("sgdevagent**** : sg_file_download  cmdobj.file= %s.\n", cmdobj.file);
-    if (sg_file_download(cmdobj.file, statusobj.msg) != VOS_OK) {
+    printf("sgdevagent**** : sg_file_download  cmd_obj.file= %s.\n", cmd_obj.file);
+    if (sg_file_download(cmd_obj.file, statusobj.msg) != VOS_OK) {
         code = REQUEST_NOTEXITS;
         statusobj.code = REQUEST_NOTEXITS;
     }
     status.state = STATUS_PRE_INSTALL;
     set_app_upgrade_status(status);		//开始安装
-    if (cmdobj.policy > 0) { //需要开启另外的线程吗？ 重开定时器 		//向线程发送任务
+    if (cmd_obj.policy > 0) { //需要开启另外的线程吗？ 重开定时器 		//向线程发送任务
         return;
-        VOS_T_Delay(cmdobj.policy * 1000);
+        VOS_T_Delay(cmd_obj.policy * 1000);
     }
-    if (sg_app_update(cmdobj, statusobj.msg) != VOS_OK) {
+    if (sg_app_update(cmd_obj, statusobj.msg) != VOS_OK) {
         code = REQUEST_REFUSE;
         statusobj.code = REQUEST_REFUSE;
     }
@@ -1859,14 +1859,14 @@ void sg_handle_app_upgrade_cmd(int32_t mid, app_upgrade_cmd_s cmdobj)
     mqtt_data_info_s *sitem = NULL;
     sitem = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(sitem, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(sitem->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_data_pub());
+    sprintf_s(sitem->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_data_pub());
     sg_pack_dev_install_result(statusobj, errormsg, sitem->msg_send);    //发送结果
     sg_push_pack_item(sitem);
  
 }
 
 //应用日志查询
-void sg_handle_app_log_get_cmd(int32_t mid, app_log_recall_cmd_s cmdobj)
+void sg_handle_app_log_get_cmd(int32_t mid, app_log_recall_cmd_s cmd_obj)
 {
     mqtt_data_info_s *item = NULL;
     uint16_t code = REQUEST_SUCCESS;
@@ -1875,16 +1875,16 @@ void sg_handle_app_log_get_cmd(int32_t mid, app_log_recall_cmd_s cmdobj)
     file_info_s fielinfo;
 
     //中间件执行
-    // cmdobj.container = 
-    // cmdobj.url = 
-    // cmdobj.app = 
+    // cmd_obj.container = 
+    // cmd_obj.url = 
+    // cmd_obj.app = 
 
     if (code != REQUEST_SUCCESS) {
         sprintf_s(errormsg, DATA_BUF_F256_SIZE, "%s", "error");
     }
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_app_reply_pub());
 
     sg_pack_app_log_get_reply(code, mid, errormsg, &fielinfo, item->msg_send);
     sg_push_pack_item(item);

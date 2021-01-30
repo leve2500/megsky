@@ -1,45 +1,36 @@
 
+/*
+ * Copyright (c) Huawei Technologies Co., Ltd. 2019-2020. All rights reserved.
+ * Description : sgdevagent dev access header
+*/
 
-/*=====================================================================
- * 文件：thread_dev_insert.h
- *
- * 描述：任务执行线程
- *
- * 作者：田振超			2020年9月27日17:10:06
- *
- * 修改记录：
- =====================================================================*/
-
-
-#ifndef _DEV_INSERT_H_
-#define _DEV_INSERT_H_
+#ifndef __DEV_INSERT_H__
+#define __DEV_INSERT_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
+#define MS_CONVERSION_INTERNAL (1000)
+#define MS_THREAD_CONNECT_WAIT(1000 * 10)
+#define SG_DEVICE_TASK_NAME "devi"
+#define SG_POLY_TASK_NAME "poly"
+//链表定义
+
 typedef struct time_cnt_info {
     int order;
-    clock_t m_dwLastCount;
-    bool    m_bValidFlag;
-    uint32_t m_dwDiffParam;
+    clock_t m_dw_last_count;
+    bool    m_b_valid_flag;
+    uint32_t m_dw_diff_param;
 }time_cnt_info_s;
 
-int sg_dev_insert_thread(void);
+int sg_init_insert_thread(void);
+int sg_exit_insert_thread(void);
 
 int sg_get_dev_ins_flag(void);
 void sg_set_dev_ins_flag(int flag);
-//离线上报接口
-void sg_send_link_down(char *reason);
 
-//延时任务处理
-//链表
-//启动定时器
-
-bool sg_calovertime(time_cnt_info_s *info);
-int sg_poly_thread(void);
-
-
+bool sg_calover_time(time_cnt_info_s *info);
 
 
 #ifdef __cplusplus

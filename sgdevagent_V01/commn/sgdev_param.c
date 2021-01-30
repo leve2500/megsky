@@ -14,11 +14,11 @@ sg_dev_param_info_s m_devParam;
 sg_dev_section_info_s m_devSection;
 sg_period_info_s m_devperiod;
 
-int getfilesize(char *strFileName)   //获取文件大小字节
+int getfilesize(char *strFileName)
 {
     FILE *fp = NULL;
     char real_path[PATH_MAX] = { 0 };
-    int size;
+    int size = 0;
 
     if (strFileName == NULL) {
         return -1;
@@ -36,10 +36,10 @@ int getfilesize(char *strFileName)   //获取文件大小字节
     (void)fseek(fp, 0L, SEEK_END);
     size = ftell(fp);
     (void)fseek(fp, 0L, SEEK_SET);
-    fclose(fp);
+    (void)fclose(fp);
     return size;
 }
-//读取断面文件
+// 读取断面文件 代码还未调试完成
 int read_section_file(void)
 {
     FILE *fp = NULL;
@@ -51,9 +51,9 @@ int read_section_file(void)
         // exit(0);
     } else {
         printf("step 1\n");
-        fgets(buff, DATA_BUF_F256_SIZE, (FILE*)fp);	//将文件内容全部读取
+        fgets(buff, DATA_BUF_F256_SIZE, (FILE*)fp);	// 将文件内容全部读取
         printf("step 2\n");
-        piload = load_json(buff);		//将字符串转为json
+        piload = load_json(buff);		// 将字符串转为json
         printf("step 3\n");
         // if (!json_is_object(piload)){
         //     printf("%s,%d\n",__FILE__,__LINE__);
@@ -78,10 +78,10 @@ int read_section_file(void)
     printf("step 8\n");
     json_decref(piload);
     printf("step 9\n");
-    fclose(fp);
+    (void)fclose(fp);
     return VOS_OK;
 }
-//写断面文件
+// 写断面文件 代码还未调试完成
 void write_section_file(void)
 {
     FILE *fp = NULL;
@@ -104,10 +104,10 @@ void write_section_file(void)
         free(test);
     }
     json_decref(piload);
-    fclose(fp);
+    (void)fclose(fp);
 }
 
-//读周期参数文件
+// 读周期参数文件
 int read_period_file(void)
 {
     int filesize = 0;
@@ -123,7 +123,7 @@ int read_period_file(void)
 
     buf = (char *)VOS_Malloc(MID_SGDEV, filesize + 1);
     if (buf == NULL) {
-        fprintf(stderr, "Error - unable to allocate required memory\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Error - unable to allocate required memory\n");
         return VOS_ERR;
     }
     (void)memset_s(buf, filesize + 1, 0, filesize + 1);
@@ -134,24 +134,23 @@ int read_period_file(void)
 
     fp = fopen(real_path, "r");
     if (fp == NULL) {
-        (void)printf("Failed to open the file!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Failed to open the file!\n");
         (void)VOS_Free(buf);
         return VOS_ERR;
     }
 
     if (!fread(buf, filesize, 1, fp)) {
-        (void)printf("read file error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read file error!\n");
         (void)fclose(fp);
         (void)VOS_Free(buf);
         return VOS_ERR;
     }
 
-    piload = load_json(buf);		//将字符串转为json
-    printf("period_buf = %s\n", buf);
+    piload = load_json(buf);
     (void)VOS_Free(buf);
 
     if (!json_is_object(piload)) {
-        printf("%s,%d\n", __FILE__, __LINE__);
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "%s,%d\n", __FILE__, __LINE__);
     }
     if (json_into_uint32_t(&m_devperiod.appperiod, piload, "appperiod") != VOS_OK) {
         (void)json_decref(piload);
@@ -174,7 +173,7 @@ int read_period_file(void)
     return VOS_OK;
 }
 
-//写周期参数文件
+// 写周期参数文件
 void sg_write_period_file(rep_period_s *paraobj)
 {
     FILE *fp = NULL;
@@ -183,7 +182,7 @@ void sg_write_period_file(rep_period_s *paraobj)
     piload = json_object();
     fp = fopen("/mnt/internal_storage/sg_period_params", "w+");
     if (NULL == fp) {
-        printf("Failed to open the file !\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Failed to open the file!\n");
     }
     json_object_set_new(piload, "appperiod", json_integer(paraobj->appPeriod));
     json_object_set_new(piload, "containerperiod", json_integer(paraobj->conPeriod));
@@ -192,14 +191,13 @@ void sg_write_period_file(rep_period_s *paraobj)
     test = json_dumps(piload, JSON_PRESERVE_ORDER);
     if (NULL != test) {
         fprintf(fp, "%s\n", test);
-        printf("write_jsonstr=%s\n", test);
         free(test);
     }
     json_decref(piload);
-    fclose(fp);
+    (void)fclose(fp);
 }
-
-void write_param_file(void) //手动写参数文件
+// 手动写参数文件
+void write_param_file(void)
 {
     FILE *fp = NULL;
     json_t *piload = NULL;
@@ -207,7 +205,7 @@ void write_param_file(void) //手动写参数文件
     piload = json_object();
     fp = fopen("/mnt/internal_storage/sg_devagentparams", "w+");
     if (NULL == fp) {
-        printf("Failed to open the file !\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Failed to open the file!\n");
     }
     m_devParam.startmode = MODE_MQTT;
     sprintf_s(m_devParam.mqtttopicversion, DATA_BUF_F32_SIZE, "%s", "v1");
@@ -228,15 +226,14 @@ void write_param_file(void) //手动写参数文件
     json_object_set_new(piload, "password", json_string(m_devParam.password));
     test = json_dumps(piload, JSON_PRESERVE_ORDER);
     fprintf(fp, "%s\n", test);
-    // printf("write_jsonstr=%s\n",test);
     if (NULL != test) {
         free(test);
     }
     json_decref(piload);
-    fclose(fp);
+    (void)fclose(fp);
 }
-
-int read_param_file(void)   //读专检参数文件 
+// 读专检参数文件
+int read_param_file(void)
 {
     int filesize = 0;
     FILE *fp = NULL;
@@ -251,7 +248,7 @@ int read_param_file(void)   //读专检参数文件
 
     buf = (char *)VOS_Malloc(MID_SGDEV, filesize + 1);
     if (buf == NULL) {
-        fprintf(stderr, "Error - unable to allocate required memory\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Error - unable to allocate required memory\n");
         return VOS_ERR;
     }
     (void)memset_s(buf, filesize + 1, 0, filesize + 1);
@@ -262,24 +259,23 @@ int read_param_file(void)   //读专检参数文件
 
     fp = fopen(real_path, "r");
     if (fp == NULL) {
-        (void)printf("Failed to open the file !\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "Failed to open the file !\n");
         (void)VOS_Free(buf);
         return VOS_ERR;
     }
 
     if (!fread(buf, filesize, 1, fp)) {
-        (void)printf("read file error!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read file error!\n");
         (void)fclose(fp);
         (void)VOS_Free(buf);
         return VOS_ERR;
     }
 
-    piload = load_json(buf);		//将字符串转为json
-    printf("param_buf = %s\n", buf);
+    piload = load_json(buf); // 将字符串转为json
     (void)VOS_Free(buf);
 
     if (!json_is_object(piload)) {
-        printf("%s,%d\n", __FILE__, __LINE__);
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "%s,%d\n", __FILE__, __LINE__);
     }
     if (json_into_uint8_t(&m_devParam.startmode, piload, "startmode") != VOS_OK) {
         (void)json_decref(piload);
@@ -316,60 +312,21 @@ int read_param_file(void)   //读专检参数文件
     (void)json_decref(piload);
     return VOS_OK;
 }
-
-sg_dev_param_info_s sg_get_param(void)           //返回设备参数
+// 返回设备参数
+sg_dev_param_info_s sg_get_param(void)
 {
-    //测试用
     return m_devParam;
 }
-
-sg_period_info_s sg_get_period(void)             //返回周期参数
+// 返回周期参数
+sg_period_info_s sg_get_period(void)
 {
-    //测试用
     return m_devperiod;
 }
-
+// 获取断面
 sg_dev_section_info_s sg_get_section(void)
 {
     m_devSection.rebootReason = 0;
     return m_devSection;
 }
 
-//加密代码
-#include "sysman_def.h"
-#define MAX_KMC_CIPHER_HEAD_LEN 80
-int test_encrypt_by_kmc(const unsigned char* plainText,unsigned int plainLen,
-unsigned char* cipherText,unsigned int cipherBufLen,unsigned int * outCipherLen)
-{
-    int ret;
-    if(plainLen + MAX_KMC_CIPHER_HEAD_LEN >= cipherBufLen){
-        return -1;
-    }
-    if (sysman_rpc_transport_open() != VOS_OK) {
-        return VOS_ERR;
-    }
-    ret = Kmc_Encrypt(plainText,plainLen,cipherText,cipherBufLen,plainLen);
-    sysman_rpc_transport_close();
-    if(ret){
-        return -1;
-    }
-    return 0;
-}
 
-int test_decrypt_by_kmc(const unsigned char* cipherText ,unsigned int cipherLen,
-unsigned char* plainText,unsigned int plainBufLen,unsigned int * outPlainLen)
-{
-    int ret;
-    if(plainLen + MAX_KMC_CIPHER_HEAD_LEN <= cipherLen){
-        return -1;
-    }
-    if (sysman_rpc_transport_open() != VOS_OK) {
-        return VOS_ERR;
-    }
-    ret = Kmc_Decrypt(cipherText,cipherLen,plainText,plainBufLen,outPlainLen);
-    sysman_rpc_transport_close();
-    if(ret){
-        return -1;
-    }
-    return 0;
-}

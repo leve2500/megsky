@@ -7,14 +7,14 @@
 extern "C" {
 #endif
 
-#define SOCKET16_LEN 16                  //重新定义宏定义
+#define SOCKET16_LEN 16                  // 重新定义宏定义
 
 // socket地址结构
 typedef struct _s_socket_param
 {
-    unsigned char	type;				// 0:TCP; 1:UDP;2:TCPSERVER
-    unsigned short  portNumber;			// 端口号
-    char			IPAddress[SOCKET16_LEN];		// IP地址，如"255.255.255.255"
+    unsigned char	type;                       // 0:TCP; 1:UDP;2:TCPSERVER
+    unsigned short  port_number;                // 端口号
+    char			ip_address[SOCKET16_LEN];   // IP地址，如"255.255.255.255"
 }s_socket_param;
 
 // 客户端连接参数
@@ -43,7 +43,7 @@ int sg_get_connect_state(void);
 void sg_sockket_init(void);
 int sg_sockket_exit(void);
 
-//客户端SOCKET设置
+// 客户端SOCKET设置
 void sg_set_socket_param(s_socket_param sockaddr, int ServerSocketFlag);
 
 // 建立连接，返回：1：连接成功；0：正在连接；－1：连接失败

@@ -8,6 +8,7 @@
 #include "vrp_event.h"
 
 #include "sgdev_struct.h"
+#include "sgdev_debug.h"
 #include "sgdev_param.h"
 
 #include "mqtt_json.h"
@@ -30,7 +31,7 @@ int msg_parse(json_t *root)   //判断消息类型：根据是否有code判断是请求帧还是应答
 {
     json_t *judge_code = NULL;
     if (NULL == root) {
-        printf("\n can not unpack ,root is null");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "\n can not unpack ,root is null");
         return 0;
     }
     judge_code = json_object_get(root, "code");
@@ -48,15 +49,15 @@ int json_into_int8_t(int8_t *idata, json_t *jdata, const char *key)
     json_t *all_info = NULL;
     all_info = json_object_get(jdata, key);
 
-    if (!json_is_integer(all_info)) {
-        printf("key = %s, json_object_get fail\n", key);
+    if (all_info == NULL || !json_is_integer(all_info)) {
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "key = %s, json_object_get fail\n", key);
         return VOS_ERR;
     }
 
     value = json_integer_value(all_info);
 
     *idata = (int8_t)value;
-    printf("int8idata=%d\n", *idata);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "int8_idata = %d\n", *idata);
     return VOS_OK;
 }
 
@@ -66,15 +67,15 @@ int json_into_uint8_t(uint8_t *idata, json_t *jdata, const char *key)
     json_t *all_info = NULL;
     all_info = json_object_get(jdata, key);
 
-    if (!json_is_integer(all_info)) {
-        printf("key = %s, json_object_get fail\n", key);
+    if (all_info == NULL || !json_is_integer(all_info)) {
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "key = %s, json_object_get fail\n", key);
         return VOS_ERR;
     }
 
     value = json_integer_value(all_info);
 
     *idata = (uint8_t)value;
-    printf("uint8idata=%d\n", *idata);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "uint8_idata = %d\n", *idata);
     return VOS_OK;
 }
 
@@ -85,42 +86,43 @@ int json_into_int32_t(int32_t *idata, json_t *jdata, const char *key)
     json_t *all_info = NULL;
     all_info = json_object_get(jdata, key);
 
-    if (!json_is_integer(all_info)) {
-        printf("key = %s, json_object_get fail\n", key);
+    if (all_info == NULL || !json_is_integer(all_info)) {
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "key = %s, json_object_get fail\n", key);
         return VOS_ERR;
     }
     value = json_integer_value(all_info);
 
     *idata = (int32_t)value;
-    printf("int32data=%d\n", *idata);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "int32_idata = %d\n", *idata);
     return VOS_OK;
 }
 
 int json_into_uint32_t(uint32_t *idata, json_t *jdata, const char *key)
 {
-    json_int_t value = 0;;
+    int ret = VOS_OK;
+    json_int_t value = 0;
     json_t *all_info = NULL;
     all_info = json_object_get(jdata, key);
 
-    if (!json_is_integer(all_info)) {
-        printf("key = %s, json_object_get fail\n", key);
-        return VOS_ERR;
+    if (all_info == NULL || !json_is_integer(all_info)) {
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "key = %s, json_object_get fail\n", key);
+        ret = VOS_ERR;
     }
     value = json_integer_value(all_info);
 
     *idata = (uint32_t)value;
-    printf("uint32idata=%d\n", *idata);
-    return VOS_OK;
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "uint32_idata = %d\n", *idata);
+    return ret;
 }
 
 //数据解析函数 json转为字符串
 int json_into_array_string(char *sdata, json_t *jdata)
 {
+    char *test = NULL;
+    
     if (jdata == NULL) {
         return VOS_ERR;
     }
-
-    char *test = NULL;
 
     if (!json_is_string(jdata)) {
         return VOS_ERR;
@@ -128,31 +130,57 @@ int json_into_array_string(char *sdata, json_t *jdata)
 
     test = json_string_value(jdata);
     memcpy_s(sdata, DATA_BUF_F256_SIZE, test, strlen(test) + 1);
-    printf("sdata=%s.\n", sdata);
-
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "sdata = %s\n", sdata);
     return VOS_OK;
 }
 
-//数据解析函数 json转为字符串
+//json数据解析函数 json转为字符串
 int json_into_string(char *sdata, json_t *jdata, const char *key)
 {
-    if (jdata == NULL){
+    json_t *all_info = NULL;
+    char *test       = NULL;
+
+    if (jdata == NULL) {
         return VOS_ERR;
     }
 
-    json_t *all_info = NULL;
-    char *test = NULL;
     all_info = json_object_get(jdata, key);
     if (NULL == all_info || !json_is_string(all_info)) {
-        
-        printf("key = %s, json_object_get fail\n", key);
+        SGDEV_WARN(SYSLOG_LOG, SGDEV_MODULE, "key = %s, json_object_get fail\n", key);
         return VOS_ERR;
     }
     test = json_string_value(all_info);
     memcpy_s(sdata, MSG_ARRVD_MAX_LEN, test, strlen(test) + 1);
-    printf("sdata=%s.\n", sdata);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "sdata = %s\n", sdata);
     return VOS_OK;
 }
+/**
+ * 函数名：g_parse_mqtt_json_string_value
+ * 功能：json数据解析函数,将json转为字符型数据
+ * 传入：json_t *inParams
+ * 传出：char *value, unsigned int value_len
+ * 备注：华为版本  后面整改
+ * */
+int sg_parse_mqtt_json_string_value(json_t *inParams, const char *key, char *value, unsigned int value_len)
+{
+    json_t *propJson = NULL;
+    errno_t err;
+    const char *val = NULL;
+    propJson = json_object_get(inParams, key);
+    if (propJson == NULL) {
+        return VOS_ERR;
+    }
+    val = json_string_value(propJson);
+    if (val == NULL) {
+        return VOS_ERR;
+    }
+    err = strcpy_s(value, value_len, val);
+    if (err != EOK) {
+        return VOS_ERR;
+    }
+    return VOS_OK;
+}
+
 
 //解析file对象  8号文中必选项中为否的不加判断
 int sg_getfile(json_t *obj, file_info_s *fileobj)
@@ -197,7 +225,7 @@ int sg_getfile(json_t *obj, file_info_s *fileobj)
 *****************************************************************************/
 int sg_mqtttimestr(time_t time_val, char *time_buff, size_t buff_len, int use_utc)
 {
-    int ret;
+    int ret     = 0;
     struct tm t = { 0 };
     if (0 == use_utc) {
         (void)localtime_r(&time_val, &t);
@@ -206,8 +234,6 @@ int sg_mqtttimestr(time_t time_val, char *time_buff, size_t buff_len, int use_ut
     }
     ret = sprintf_s(time_buff, buff_len, "%04d-%02d-%02dT%02d:%02d:%02dZ",
         t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
-    // ret = sprintf(time_buff, "%04d-%02d-%02dT%02d:%02d:%02dZ",
-          // t.tm_year + 1900, t.tm_mon + 1, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec);
     return ret > 0 ? VOS_OK : VOS_ERR;
 }
 
@@ -227,7 +253,7 @@ mqtt_request_header_s *sg_unpack_json_msg_header_request(json_t *root)
     header = (mqtt_request_header_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_request_header_s));
     (void)memset_s(header, sizeof(mqtt_request_header_s), 0, sizeof(mqtt_request_header_s));
     if (NULL == root) {
-        printf("can not unpack, root is null\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "can not unpack, root is null\n");
         return header;
     }
     json_into_int32_t(&header->mid, root, "mid");
@@ -254,7 +280,7 @@ mqtt_reply_header_s *sg_unpack_json_msg_header_reply(json_t *root)
     (void)memset_s(header, sizeof(mqtt_reply_header_s), 0, sizeof(mqtt_reply_header_s));
     header->param = NULL;
     if (NULL == root) {
-        printf("can not unpack ,root is null\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "can not unpack ,root is null\n");
         return header;
     }
     json_into_int32_t(&header->mid, root, "mid");
@@ -280,41 +306,39 @@ char *sg_pack_json_msg_header(uint16_t code, int32_t mid, const char *type, cons
 {
     time_t now_time;
     now_time = time(NULL);
-    char timestamp[DATA_BUF_F32_SIZE];
+    char timestamp[DATA_BUF_F32_SIZE] = { 0 };
     char *result = NULL;
-    //转换json
     json_t *piload = NULL;
     piload = json_object();
     sg_dev_param_info_s idparam = sg_get_param();
-    json_object_set_new(piload, "deviceId", json_string(idparam.devid));  //获取deviceId
-    //timestamp
-    sg_mqtttimestr(now_time, timestamp, sizeof(timestamp), TIME_UTC);    //使用UTC时间
-    if (NULL != timestamp) {
-        json_object_set_new(piload, "timestamp", json_string(timestamp));
+    (void)json_object_set_new(piload, "deviceId", json_string(idparam.devid));  // 获取deviceId
+    sg_mqtttimestr(now_time, timestamp, sizeof(timestamp), TIME_UTC);           // 使用UTC时间
+    if (timestamp != NULL) {
+        (void)json_object_set_new(piload, "timestamp", json_string(timestamp));
     }
-    if (CODE_NULL != code) {
-        json_object_set_new(piload, "code", json_integer(code));
+    if (code != CODE_NULL) {
+        (void)json_object_set_new(piload, "code", json_integer(code));
     }
-    if (0 != mid) {
-        json_object_set_new(piload, "mid", json_integer(mid));
+    if (mid != 0) {
+        (void)json_object_set_new(piload, "mid", json_integer(mid));
     }
-    if (NULL != type) {
-        json_object_set_new(piload, "type", json_string(type));
+    if (type != NULL) {
+        (void)json_object_set_new(piload, "type", json_string(type));
     }
-    if (NULL != msg) {
-        json_object_set_new(piload, "msg", json_string(msg));
+    if (msg != NULL) {
+        (void)json_object_set_new(piload, "msg", json_string(msg));
     }
-    if (NULL != param) {
-        json_object_set_new(piload, "param", param);
+    if (param != NULL) {
+        (void)json_object_set_new(piload, "param", param);
     }
     result = json_dumps(piload, JSON_PRESERVE_ORDER);
-    printf("result=%s\n", result);
+    SGDEV_INFO(SYSLOG_LOG, SGDEV_MODULE, "result = %s\n", result);
     json_decref(piload);
     return result;
 }
 
 //解析cfgCpu对象
-int sg_getcfgcpu(json_t *obj, cfg_cpu_info_s *cfgcpuobj)
+int sg_get_cfgcpu(json_t *obj, cfg_cpu_info_s *cfgcpuobj)
 {
     if (json_is_object(obj)) {
         if (json_into_uint32_t(&cfgcpuobj->cpus, obj, "cpus") != VOS_OK) {
@@ -329,7 +353,7 @@ int sg_getcfgcpu(json_t *obj, cfg_cpu_info_s *cfgcpuobj)
     return VOS_OK;
 }
 //解析cfgMem对象
-int sg_getcfgmem(json_t *obj, cfg_mem_info_s *cfgmemobj)
+int sg_get_cfgmem(json_t *obj, cfg_mem_info_s *cfgmemobj)
 {
     if (json_is_object(obj)) {
         if (json_into_uint32_t(&cfgmemobj->memory, obj, "memory") != VOS_OK) {
@@ -344,7 +368,7 @@ int sg_getcfgmem(json_t *obj, cfg_mem_info_s *cfgmemobj)
     return VOS_OK;
 }
 //解析cfgDisk对象
-int sg_getcfgdisk(json_t *obj, cfg_disk_info_s *cfgdiskobj)
+int sg_get_cfgdisk(json_t *obj, cfg_disk_info_s *cfgdiskobj)
 {
     if (json_is_object(obj)) {
         if (json_into_uint32_t(&cfgdiskobj->disk, obj, "disk") != VOS_OK) {

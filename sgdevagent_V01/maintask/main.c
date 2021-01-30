@@ -16,6 +16,7 @@
 #include "sgdev_param.h"
 #include "sgdev_struct.h"
 #include "sgdev_queue.h"
+#include "sgdev_queue.h"
 
 #include "thread_dev_insert.h"
 #include "thread_task_exe.h"
@@ -31,16 +32,6 @@ void sgdevagent_ignore_sig(int signum);
 void sgdevagent_sighandler(int signo);
 void sg_handle_signal(void);
 
-uint32_t g_create_dev_ins_id = 0;
-uint32_t g_create_bus_int_id = 0;
-uint32_t g_create_tsk_exe_dev_id = 0;
-uint32_t g_create_tsk_exe_con_id = 0;
-uint32_t g_create_tsk_exe_app_id = 0;
-uint32_t g_create_mqt_pub_id = 0;
-uint32_t g_create_socket_read_id = 0;
-uint32_t g_create_socket_write_id = 0;
-
-
 void sgdevagent_ignore_sig(int signum)
 {
     struct sigaction sa;
@@ -54,15 +45,15 @@ void sgdevagent_sighandler(int signo)
     SGDEV_NOTICE(SYSLOG_LOG, SGDEV_MODULE, "sgdevagent receive sigo:%d", signo);
     switch (signo)
     {
-    case SIGQUIT:
-    case SIGILL:
-    case SIGBUS:
-    case SIGFPE:
-    case SIGSEGV:
-        SSP_Backtrace("ACAGENT");
-        break;
-    default:
-        break;
+        case SIGQUIT:
+        case SIGILL:
+        case SIGBUS:
+        case SIGFPE:
+        case SIGSEGV:
+            SSP_Backtrace("SGDEVAGENT");
+            break;
+        default:
+            break;
     }
 
     (void)kill(getpid(), signo);
@@ -91,160 +82,111 @@ void sg_handle_signal(void)
     return;
 
 }
-static void sg_create_task(void)
+
+static int sg_create_task(void)
 {
-    sg_dev_param_info_s param = sg_get_param();
-    VOS_UINT32 ret = 0;
-
-    ret = (int)VOS_T_Create("devI", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_dev_insert_thread,                                        //启动任务1 设备接入线程
-        &g_create_dev_ins_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Create DEV insert fail ret = %d!", ret);
+    int ret = VOS_OK;
+    if (sg_init_insert_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
 
-    ret = VOS_T_Create("busi", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)bus_inter_thread, &g_create_bus_int_id);                        //业务交互线程
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Create businter fail! ret = %d!", ret);
+    if (sg_init_interact_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
 
-    ret = VOS_T_Create("edev", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_task_execution_dev_thread,                                  //任务执行线程
-        &g_create_tsk_exe_dev_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Create task exe dev fail! ret = %d!", ret);
+    if (sg_init_exe_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
 
-    ret = VOS_T_Create("econ", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_task_execution_container_thread,                            //容器操作类
-        &g_create_tsk_exe_con_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Create task exe container fail! ret = %d!", ret);
+    if (sg_init_event_thread() != VOS_OK) {
+        ret = VOS_ERR;
+    }
+    if (sg_init_data_manager_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
 
-    ret = VOS_T_Create("eapp", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_task_execution_app_thread,                                   //app操作类
-        &g_create_tsk_exe_app_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Create task exe app fail! ret = %d!", ret);
-    }
-    // 事件处理
-    ret = (int)VOS_T_Create("skmg", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_event_deal_thread, &g_create_event_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Create task exe app fail!");
-    }
-    if (MODE_RMTMAN == param.startmode) {                                                                                                           //socket收、发数据线程       
-        ret = VOS_T_Create("sred", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_rpc_read_data_thread,
-            &g_create_socket_read_id);
-        if (ret != VOS_OK) {
-            printf(" \n VOS_T_Create socket read fail! ret = %d!", ret);
-        }
-        ret = VOS_T_Create("swte", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_rpc_write_data_thread,
-            &g_create_socket_write_id);
-        if (ret != VOS_OK) {
-            printf(" \n VOS_T_Create socket write fail! ret = %d!", ret);
-        }
-    } else {                                                                                                                                        //发布mqtt线程
-        ret = VOS_T_Create("mqtp", VOS_T_PRIORITY_NORMAL, 0, 0, 0, (TaskStartAddress_PF)sg_mqtt_pub_thread,
-            &g_create_mqt_pub_id);
-        if (ret != VOS_OK) {
-            printf(" \n VOS_T_Create mqttpub fail! ret = %d!", ret);
-        }
-    }
+    return ret;
 }
 
-static void sg_destroy_task(void)
+static int sg_destroy_task(void)
 {
-    sg_dev_param_info_s param = sg_get_param();
-    VOS_UINT32 ret = 0;
-    ret = VOS_T_Delete(g_create_dev_ins_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Delete DEV insert fail!");
+    int ret = VOS_OK;
+    if (sg_exit_interact_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
-    ret = VOS_T_Delete(g_create_bus_int_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Delete businter fail!");
+
+    if (sg_exit_insert_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
-    ret = VOS_T_Delete(g_create_tsk_exe_dev_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Delete taskexe fail!");
+
+    if (sg_exit_event_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
-    ret = VOS_T_Delete(g_create_tsk_exe_con_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Delete taskexe fail!");
+
+    if (sg_exit_exe_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
-    ret = VOS_T_Delete(g_create_tsk_exe_app_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Delete taskexe fail!");
+
+    if (sg_exit_data_manager_thread() != VOS_OK) {
+        ret = VOS_ERR;
     }
-    ret = VOS_T_Delete(g_create_event_id);
-    if (ret != VOS_OK) {
-        printf(" \n VOS_T_Delete g_create_event_id fail!");
-    }
-    if (MODE_RMTMAN == param.startmode) {            //socket收、发数据线程
-        ret = VOS_T_Delete(g_create_socket_read_id);
-        if (ret != VOS_OK) {
-            printf(" \n VOS_T_Delete g_create_socket_read_id fail!");
-        }
-        ret = VOS_T_Delete(g_create_socket_write_id);
-        if (ret != VOS_OK) {
-            printf(" \n VOS_T_Delete g_create_socket_write_id fail!");
-        }
-    } else {
-        ret = VOS_T_Delete(g_create_mqt_pub_id);
-        if (ret != VOS_OK) {
-            printf(" \n VOS_T_Delete mqttpub fail!");
-        }
-    }
+
+    return ret;
 }
 
 static int sg_init()
 {
-    int nRet = VOS_OK;
-    sg_mutex_init();            //初始化锁
-    //队列初始化
-    sg_que_unpack_create();
-    sg_que_pack_create();
-    sg_que_task_create();
-    sg_que_result_create();
-    sg_create_task();           //创建任务
+    int ret = VOS_OK;
+    (void)sg_mutex_init();            // 初始化锁
 
-    //注册定时器
-    sg_period_info_s param = sg_get_period();
-    if (sg_timer_pre_create() == VOS_OK) {
-        nRet = sg_timer_heart_create(param.devheartbeatperiod);
-        if (nRet != VOS_OK) {
-            return nRet;
-        }
-        nRet = sg_timer_dev_create(param.devperiod);
-        if (nRet != VOS_OK) {
-            return nRet;
-        }
-        nRet = sg_timer_container_create(param.containerperiod);
-        if (nRet != VOS_OK) {
-            return nRet;
-        }
-        nRet = sg_timer_app_create(param.appperiod);
-        if (nRet != VOS_OK) {
-            return nRet;
-        }
+    (void)sg_que_unpack_create();    // 队列初始化
+    (void)sg_que_pack_create();
+    (void)sg_que_task_create();
+    (void)sg_que_result_create();
+
+    if (sg_create_task() != VOS_OK) {       // 创建任务
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_create_task creat failed.\n");
+        ret = VOS_ERR;
     }
-    return  nRet;
+
+    sg_period_info_s param = sg_get_period();
+    if (sg_timer_pre_create() != VOS_OK) {    // 注册定时器线程
+        return VOS_ERR;
+    }
+    if (sg_timer_heart_create(param.dev_heartbeat_period)) {
+        ret = VOS_ERR;
+    }
+
+    if (sg_timer_dev_create(param.dev_period) != VOS_OK) {
+        ret = VOS_ERR;
+    }
+
+    if (sg_timer_container_create(param.container_period) != VOS_OK) {
+        ret = VOS_ERR;
+    }
+
+    if (sg_timer_app_create(param.app_period) != VOS_OK) {
+        ret = VOS_ERR;
+    }
+    return  ret;
 }
 
-
-static int sg_exit()
+static void sg_exit()
 {
-    int nRet = 0;
-    sg_que_unpack_destroy();	//队列删除
-    sg_que_pack_destroy();
-    sg_que_task_destroy();
-    sg_que_result_destroy();
+    (void)sg_que_unpack_destroy();      //队列删除
+    (void)sg_que_pack_destroy();
+    (void)sg_que_task_destroy();
+    (void)sg_que_result_destroy();
 
-    sg_timer_heart_delete();    //定时器删除
-    sg_timer_dev_delete();
-    sg_timer_container_deletee();
-    sg_timer_app_delete();
+    (void)sg_timer_heart_delete();      //定时器删除
+    (void)sg_timer_dev_delete();
+    (void)sg_timer_container_deletee();
+    (void)sg_timer_app_delete();
 
-    sg_destroy_task();		//任务退出
-    sg_mutex_exit();
-    return  nRet;
+    if (sg_destroy_task() != VOS_OK) {
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_destroy_task destroy failed.\n");
+    }
+    (void)sg_mutex_exit();
 }
 
 int main(int argc, char *argv[])
@@ -254,7 +196,7 @@ int main(int argc, char *argv[])
     (void)sgdevagent_ignore_sig(SIGPIPE);
     (void)sgdevagent_ignore_sig(SIGRTMIN + 4);
 
-    sg_log_init();      // 日志初始化
+    (void)sg_log_init();      // 日志初始化
 
     ret = (int)SSP_Init();
     if (ret != VOS_OK) {
@@ -262,7 +204,7 @@ int main(int argc, char *argv[])
         goto main_error;
     }
 
-    if (read_param_file() != VOS_OK) {     // 读参数文件
+    if (read_param_file() != VOS_OK) {      // 读参数文件
         SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "read_param_file failed");
         goto main_error;
     }
@@ -276,22 +218,22 @@ int main(int argc, char *argv[])
         goto main_error;
     }
     //信号处理
-    sg_handle_signal();
+    (void)sg_handle_signal();
     sg_dev_param_info_s param = sg_get_param();
 
     if (param.startmode == MODE_RMTMAN) {
-        sg_sockket_init();
+        (void)sg_sockket_init();
         (void)sg_sockket_exit();
     } else {
         if (sg_mqtt_main_task() != VOS_OK)) {
             SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "sg_mqtt_main_task failed");
         }
-        sg_mqtt_exit();
+        (void)sg_mqtt_exit();
     }
-    sg_exit();
+    (void)sg_exit();
 
 main_error:
-    sg_log_close();
+    (void)sg_log_close();
     return ret;
 }
 

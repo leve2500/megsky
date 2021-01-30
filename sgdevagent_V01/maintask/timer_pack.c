@@ -15,25 +15,24 @@
 
 #include "sgdev_struct.h"
 #include "sgdev_queue.h"
-#include "timer_pack.h"
 #include "mqtt_json.h"
 #include "mqtt_dev.h"
 #include "mqtt_pub.h"
-
 #include "thread_dev_insert.h"
 #include "task_deal.h"
 
+#include "timer_pack.h"
 //示例
 unsigned int g_timer_task_id = 0;
 unsigned int g_timer_queue_id = 0;
 
-uint32_t create_time_heart_id = VOS_NULL_LONG;
-uint32_t create_time_dev_id = VOS_NULL_LONG;
-uint32_t create_time_container_id = VOS_NULL_LONG;
-uint32_t create_time_app_id = VOS_NULL_LONG;
+uint32_t g_create_time_heart_id = VOS_NULL_LONG;
+uint32_t g_create_time_dev_id = VOS_NULL_LONG;
+uint32_t g_create_time_container_id = VOS_NULL_LONG;
+uint32_t g_create_time_app_id = VOS_NULL_LONG;
 
-int heartflag = 0;
-int heart_send_count = 0;
+int g_heart_flag = 0;
+int g_heart_send_count = 0;
 
 
 //心跳定时器
@@ -51,13 +50,13 @@ static int sg_timer_heart_callback(void)
         return VOS_ERR;
     }
 
-    if (heartflag == 1) {
-        heart_send_count = 0;
-        heartflag = 0;
+    if (g_heart_flag == 1) {
+        g_heart_send_count = 0;
+        g_heart_flag = 0;
     }
-    if (heart_send_count > HEART_MAX_COUNT) {
+    if (g_heart_send_count > HEART_MAX_COUNT) {
         (void)sg_set_dev_ins_flag(DEVICE_OFFLINE);
-        heart_send_count = 0;
+        g_heart_send_count = 0;
         //发送设备断开命令？ 不发送
         //日志保存
         printf("The number of heartbeats sent reaches a limit  DEVICE_OFFLINE.\n");
@@ -71,7 +70,7 @@ static int sg_timer_heart_callback(void)
     item = (mqtt_data_info_s*)VOS_Malloc(MID_SGDEV, sizeof(mqtt_data_info_s));
     (void)memset_s(item, sizeof(mqtt_data_info_s), 0, sizeof(mqtt_data_info_s));
 
-    sprintf_s(item->pubtopic, DATA_BUF_F256_SIZE, "%s", get_topic_device_request_pub());
+    sprintf_s(item->pub_topic, DATA_BUF_F256_SIZE, "%s", get_topic_device_request_pub());
     ret = sg_pack_dev_heartbeat_request_data(item->msg_send);
     if (VOS_OK != ret) {
         printf("sg_pack_dev_heartbeat_request_data fail.\n");
@@ -79,8 +78,8 @@ static int sg_timer_heart_callback(void)
     }
 
     sg_push_pack_item(item);        //入列
-    heart_send_count++;
-    printf("megsky --test：heart_send_count = %d.\n", heart_send_count);
+    g_heart_send_count++;
+    printf("megsky --test：g_heart_send_count = %d.\n", g_heart_send_count);
     return ret;
 }
 
@@ -186,11 +185,11 @@ static int sg_timer_queue_create(void)
 int sg_timer_pre_create()
 {
     //创建任务
-    if (sg_timer_task_create() != 0) {
-        return -1;
+    if (sg_timer_task_create() != VOS_OK) {
+        return VOS_ERR;
     }
-    if (sg_timer_queue_create() != 0) {
-        return -1;
+    if (sg_timer_queue_create() != VOS_OK) {
+        return VOS_ERR;
     }
     return VOS_OK;
 }
@@ -200,15 +199,15 @@ int sg_timer_heart_create(uint32_t timeout)
     uint32_t ret;
     uint32_t time_out = timeout * 1000; //  ms
 
-    if (VOS_NULL_LONG != create_time_heart_id) {
-        if (VOS_OK != VOS_Timer_Delete(create_time_heart_id)) {
-            printf("VOS_Timer_Delete create_time_heart_id fail!\n");
+    if (VOS_NULL_LONG != g_create_time_heart_id) {
+        if (VOS_OK != VOS_Timer_Delete(g_create_time_heart_id)) {
+            printf("VOS_Timer_Delete g_create_time_heart_id fail!\n");
         } else {
-            create_time_heart_id = VOS_NULL_LONG;
+            g_create_time_heart_id = VOS_NULL_LONG;
         }
     }
     ret = VOS_Timer_Create(g_timer_task_id, g_timer_queue_id, time_out, (void(*) (void *))sg_timer_heart_callback, NULL,
-        &create_time_heart_id, VOS_TIMER_LOOP);
+        &g_create_time_heart_id, VOS_TIMER_LOOP);
     if (ret != VOS_OK) {
         printf("sg_timer_heart_create fail!\n");
         return -1;
@@ -221,17 +220,17 @@ int sg_timer_dev_create(uint32_t timeout)
     uint32_t ret;
     uint32_t time_out = timeout * 1000; //  ms
 
-    if (VOS_NULL_LONG != create_time_dev_id)
+    if (VOS_NULL_LONG != g_create_time_dev_id)
     {
-        if (VOS_OK != VOS_Timer_Delete(create_time_dev_id)) {
-            printf("VOS_Timer_Delete create_time_dev_id fail!\n");
+        if (VOS_OK != VOS_Timer_Delete(g_create_time_dev_id)) {
+            printf("VOS_Timer_Delete g_create_time_dev_id fail!\n");
         } else {
-            create_time_dev_id = VOS_NULL_LONG;
+            g_create_time_dev_id = VOS_NULL_LONG;
         }
     }
 
     ret = VOS_Timer_Create(g_timer_task_id, g_timer_queue_id, time_out, (void(*) (void *))sg_timer_dev_callback, NULL,
-        &create_time_dev_id, VOS_TIMER_LOOP);
+        &g_create_time_dev_id, VOS_TIMER_LOOP);
     if (ret != VOS_OK) {
         printf("sg_timer_dev_create fail!\n");
         return -1;
@@ -243,16 +242,16 @@ int sg_timer_container_create(uint32_t timeout)
     uint32_t ret;
     uint32_t time_out = timeout * 1000; //  ms
 
-    if (VOS_NULL_LONG != create_time_container_id) {
-        if (VOS_OK != VOS_Timer_Delete(create_time_container_id)) {
-            printf("VOS_Timer_Delete create_time_container_id fail!\n");
+    if (VOS_NULL_LONG != g_create_time_container_id) {
+        if (VOS_OK != VOS_Timer_Delete(g_create_time_container_id)) {
+            printf("VOS_Timer_Delete g_create_time_container_id fail!\n");
         } else {
-            create_time_container_id = VOS_NULL_LONG;
+            g_create_time_container_id = VOS_NULL_LONG;
         }
     }
 
     ret = VOS_Timer_Create(g_timer_task_id, g_timer_queue_id, time_out, (void(*) (void *))sg_timer_container_callback, NULL,
-        &create_time_container_id, VOS_TIMER_LOOP);
+        &g_create_time_container_id, VOS_TIMER_LOOP);
     if (ret != VOS_OK) {
         printf("sg_timer_container_create fail!\n");
         return -1;
@@ -264,17 +263,17 @@ int sg_timer_app_create(uint32_t timeout)
     uint32_t ret;
     uint32_t time_out = timeout * 1000; //  ms
 
-    if (VOS_NULL_LONG != create_time_app_id)
+    if (VOS_NULL_LONG != g_create_time_app_id)
     {
-        if (VOS_OK != VOS_Timer_Delete(create_time_app_id)) {
-            printf("VOS_Timer_Delete create_time_app_id fail!\n");
+        if (VOS_OK != VOS_Timer_Delete(g_create_time_app_id)) {
+            printf("VOS_Timer_Delete g_create_time_app_id fail!\n");
         } else {
-            create_time_app_id = VOS_NULL_LONG;
+            g_create_time_app_id = VOS_NULL_LONG;
         }
     }
 
     ret = VOS_Timer_Create(g_timer_task_id, g_timer_queue_id, time_out, (void(*) (void *))sg_timer_app_callback, NULL,
-        &create_time_app_id, VOS_TIMER_LOOP);
+        &g_create_time_app_id, VOS_TIMER_LOOP);
     if (ret != VOS_OK) {
         printf("sg_timer_app_create fail!\n");
         return -1;
@@ -285,46 +284,45 @@ int sg_timer_app_create(uint32_t timeout)
 void sg_timer_heart_delete(void)
 {
     uint32_t ret;
-    ret = VOS_Timer_Delete(create_time_heart_id);
+    ret = VOS_Timer_Delete(g_create_time_heart_id);
     if (ret != VOS_OK) {
-        printf("sg_timer_heart_delete  fail!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "timer heart delete failed.\n");
     }
 }
 
 void sg_timer_dev_delete(void)
 {
     uint32_t ret;
-    ret = VOS_Timer_Delete(create_time_dev_id);
+    ret = VOS_Timer_Delete(g_create_time_dev_id);
     if (ret != VOS_OK) {
-        printf("sg_timer_dev_delete  fail!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "timer device delete failed.\n");
     }
 }
 
 void sg_timer_container_deletee(void)
 {
     uint32_t ret;
-    ret = VOS_Timer_Delete(create_time_container_id);
+    ret = VOS_Timer_Delete(g_create_time_container_id);
     if (ret != VOS_OK) {
-        printf("sg_timer_container_delete  fail!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "timer container delete failed.\n");
     }
 }
 
 void sg_timer_app_delete(void)
 {
     uint32_t ret;
-    ret = VOS_Timer_Delete(create_time_app_id);
+    ret = VOS_Timer_Delete(g_create_time_app_id);
     if (ret != VOS_OK) {
-        printf("sg_timer_app_delete  fail!\n");
+        SGDEV_ERROR(SYSLOG_LOG, SGDEV_MODULE, "timer app delete failed.\n");
     }
 }
 
 int sg_get_dev_heart_flag(void)
 {
-    return heartflag;
+    return g_heart_flag;
 }
 
 void sg_set_dev_heart_flag(int flag)
 {
-    heartflag = flag;
-    printf("sg_set_dev_heart_flag = %d.\n", heartflag);
+    g_heart_flag = flag;
 }
